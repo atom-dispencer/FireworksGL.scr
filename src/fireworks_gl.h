@@ -16,5 +16,9 @@ struct FWGL {
 	GLFWwindow* window;
 };
 
+#define TO_GLCOLOR(b) (b / 255.0f)
+
 void FWGL_parseArgs(struct FWGL* fwgl, int argc, char* argv[]);
 void FWGL_createGLFWWindow(struct FWGL* fwgl);
+void FWGL_process(struct FWGL* fwgl);
+void FWGL_render(struct FWGL* fwgl);

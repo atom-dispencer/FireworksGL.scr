@@ -29,6 +29,10 @@ int main(int argc, char *argv[])
     }
 
     while (!glfwWindowShouldClose(fwgl.window)) {
+
+        FWGL_process(&fwgl);
+        FWGL_render(&fwgl);
+
         glfwSwapBuffers(fwgl.window);
         glfwPollEvents();
     }
@@ -108,9 +112,21 @@ void FWGL_createGLFWWindow(struct FWGL* fwgl) {
     fwgl->error = FWGL_OK;
 }
 
-//
-// Prototype implementation!
-//
 void FWGL_framebufferSizeCallback(GLFWwindow* window, int width, int height) {
     glViewport(0, 0, width, height);
+}
+
+void FWGL_process(struct FWGL* fwgl) {
+    if (GLFW_PRESS == glfwGetKey(fwgl->window, GLFW_KEY_SPACE)
+            || GLFW_PRESS == glfwGetKey(fwgl->window, GLFW_KEY_ENTER)
+            || GLFW_PRESS == glfwGetMouseButton(fwgl->window, GLFW_MOUSE_BUTTON_LEFT)
+        ) {
+        printf("Input detected! Triggering close...\n");
+        glfwSetWindowShouldClose(fwgl->window, TRUE);
+    }
+}
+
+void FWGL_render(struct FWGL* fwgl) {
+    glClearColor(0, 0, 0, 1);
+    glClear(GL_COLOR_BUFFER_BIT);
 }
