@@ -6,22 +6,22 @@
 #include "fireworks_gl.h"
 
 const char* vertexShaderSource =
-SHADER(     #version 330 core                                   )
-SHADER(     layout(location = 0) in vec3 aPos;                  )
-SHADER(     void main()                                         )
-SHADER(     {                                                   )
-SHADER(     \tgl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);    )
-SHADER(     }                                                   )"\0";
+SHADER(     #version 330 core                                       )
+SHADER(     layout(location = 0) in vec3 aPos;                      )
+SHADER(     void main()                                             )
+SHADER(     {                                                       )
+SHADER(     \tgl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);      )
+SHADER(     }                                                       )"\0";
 
 
 
 const char* fragmentShaderSource =
-SHADER(     #version 330 core                           )
-SHADER(     out vec4 FragColor;                         )
-SHADER(     void main()                                 )
-SHADER(     {                                           )
-SHADER(     \tFragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f);   )
-SHADER(     };                                          )"\0";
+SHADER(     #version 330 core                               )
+SHADER(     out vec4 FragColor;                             )
+SHADER(     void main()                                     )
+SHADER(     {                                               )
+SHADER(     \tFragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f);     )
+SHADER(     };                                              )"\0";
 
 int main(int argc, char *argv[])
 {
@@ -43,10 +43,16 @@ int main(int argc, char *argv[])
     FWGL_createGLFWWindow(&fwgl);
     if (fwgl.error != FWGL_OK) {
         printf("Error creating GLFW window: %d\n", fwgl.error);
+        glfwTerminate();
         return fwgl.error;
     }
 
     FWGL_initRender(&fwgl);
+    if (fwgl.error != FWGL_OK) {
+        printf("Failed to set up rendering infrastructure!");
+        glfwTerminate();
+        return fwgl.error;
+    }
 
     while (!glfwWindowShouldClose(fwgl.window)) {
 
