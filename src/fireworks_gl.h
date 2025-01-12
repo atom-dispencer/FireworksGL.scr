@@ -20,7 +20,6 @@ struct FWGL {
 	BOOL is_preview;
 	GLFWwindow* window;
 
-	unsigned int VAO;
 	unsigned int shaderProgram;
 };
 

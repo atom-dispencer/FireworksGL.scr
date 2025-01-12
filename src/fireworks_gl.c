@@ -5,6 +5,8 @@
 
 #include "fireworks_gl.h"
 
+const int MAX_PARTICLES = 200;
+
 const char* vertexShaderSource =
 SHADER(     #version 330 core                                       )
 SHADER(     layout(location = 0) in vec3 aPos;                      )
@@ -14,7 +16,6 @@ SHADER(     \tgl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);      )
 SHADER(     }                                                       )"\0";
 
 
-
 const char* fragmentShaderSource =
 SHADER(     #version 330 core                               )
 SHADER(     out vec4 FragColor;                             )
@@ -22,6 +23,39 @@ SHADER(     void main()                                     )
 SHADER(     {                                               )
 SHADER(     \tFragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f);     )
 SHADER(     };                                              )"\0";
+
+
+const float unitRadiusCircleVertices[] = {
+     1.000f,  0.000f, 0.0f,
+     0.866f,  0.500f, 0.0f,
+     0.707f,  0.707f, 0.0f,
+     0.500f,  0.866f, 0.0f,
+
+     0.000f,  1.000f, 0.0f,
+    -0.866f,  0.500f, 0.0f,
+    -0.707f,  0.707f, 0.0f,
+    -0.500f,  0.866f, 0.0f,
+
+    -1.000f,  0.000f, 0.0f,
+    -0.866f, -0.500f, 0.0f,
+    -0.707f, -0.707f, 0.0f,
+    -0.500f, -0.866f, 0.0f,
+
+     0.000f, -1.000f, 0.0f,
+     0.866f, -0.500f, 0.0f,
+     0.707f, -0.707f, 0.0f,
+     0.500f, -0.866f, 0.0f,
+};
+const int unitRadiusCircleIndices[] = {
+    // Edge of the circle
+    0, 1, 2,
+    2, 3, 4, 
+    4, 5, 6,
+    6, 7, 0,
+    // Fill the inside
+    2, 4, 6,
+    2, 6, 0
+};
 
 int main(int argc, char *argv[])
 {
