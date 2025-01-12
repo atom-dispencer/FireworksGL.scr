@@ -5,9 +5,29 @@
 
 #include "fireworks_gl.h"
 
+const char* vertexShaderSource =
+SHADER(     #version 330 core                                   )
+SHADER(     layout(location = 0) in vec3 aPos;                  )
+SHADER(     void main()                                         )
+SHADER(     {                                                   )
+SHADER(     gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);    )
+SHADER(     }                                                   )"\0";
+
+
+
+const char* fragmentShaderSource =
+SHADER(     #version 330 core                           )
+SHADER(     out vec4 FragColor;                         )
+SHADER(     void main()                                 )
+SHADER(     {                                           )
+SHADER(     FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f);   )
+SHADER(     };                                          )"\0";
+
 int main(int argc, char *argv[])
 {
     printf("FireworksGL!\n");
+
+    printf(vertexShaderSource);
 
     struct FWGL fwgl;
 
@@ -63,7 +83,7 @@ void FWGL_parseArgs(struct FWGL* fwgl, int argc, char* argv[]) {
 }
 
 void FWGL_printHelp() {
-
+    printf(" ~~ Help ~~ \n");
 }
 
 void FWGL_createGLFWWindow(struct FWGL* fwgl) {
