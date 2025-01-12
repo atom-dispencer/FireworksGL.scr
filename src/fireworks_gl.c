@@ -10,7 +10,7 @@ SHADER(     #version 330 core                                   )
 SHADER(     layout(location = 0) in vec3 aPos;                  )
 SHADER(     void main()                                         )
 SHADER(     {                                                   )
-SHADER(     gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);    )
+SHADER(     \tgl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);    )
 SHADER(     }                                                   )"\0";
 
 
@@ -20,14 +20,12 @@ SHADER(     #version 330 core                           )
 SHADER(     out vec4 FragColor;                         )
 SHADER(     void main()                                 )
 SHADER(     {                                           )
-SHADER(     FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f);   )
+SHADER(     \tFragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f);   )
 SHADER(     };                                          )"\0";
 
 int main(int argc, char *argv[])
 {
     printf("FireworksGL!\n");
-
-    printf(vertexShaderSource);
 
     struct FWGL fwgl;
 
@@ -47,6 +45,8 @@ int main(int argc, char *argv[])
         printf("Error creating GLFW window: %d\n", fwgl.error);
         return fwgl.error;
     }
+
+    FWGL_initRender(&fwgl);
 
     while (!glfwWindowShouldClose(fwgl.window)) {
 
@@ -144,6 +144,55 @@ void FWGL_process(struct FWGL* fwgl) {
         printf("Input detected! Triggering close...\n");
         glfwSetWindowShouldClose(fwgl->window, TRUE);
     }
+}
+
+void FWGL_initRender(struct FWGL* fwgl) {
+    printf("\nVertex Shader:\n%s\n", vertexShaderSource);
+    printf("\nFragment Shader:\n%s\n", fragmentShaderSource);
+
+    int success;
+    char log[512];
+
+    unsigned int vertexShader = glCreateShader(GL_VERTEX_SHADER);
+    glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
+    glCompileShader(vertexShader);
+    glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success);
+    if (!success) {
+        glGetShaderInfoLog(vertexShader, 512, NULL, log);
+        printf("Failed to compile vertex shader: %s", log);
+        fwgl->error = FWGL_ERROR_INIT_COMPILEVERTEX;
+        return;
+    }
+
+    unsigned int fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(fragmentShader, 1, &fragmentShaderSource, NULL);
+    glCompileShader(fragmentShader);
+    glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);
+    if (!success) {
+        glGetShaderInfoLog(fragmentShader, 512, NULL, log);
+        printf("Failed to compile fragment shader: %s", log);
+        fwgl->error = FWGL_ERROR_INIT_COMPILEVERTEX;
+        return;
+    }
+
+    unsigned program = glCreateProgram();
+    fwgl->shaderProgram = program;
+    glAttachShader(program, vertexShader);
+    glAttachShader(program, fragmentShader);
+    glLinkProgram(program);
+    glGetProgramiv(program, GL_LINK_STATUS, &success);
+    if (!success) {
+        glGetProgramInfoLog(program, 512, NULL, log);
+        printf("Failed to link shader program: %s", log);
+        fwgl->error = FWGL_ERROR_INIT_SHADERLINK;
+        return;
+    }
+
+    glDeleteShader(vertexShader);
+    glDeleteShader(fragmentShader);
+    printf("Successfully compiled and linked shader program!\n");
+
+
 }
 
 void FWGL_render(struct FWGL* fwgl) {
