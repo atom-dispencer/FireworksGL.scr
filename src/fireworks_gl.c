@@ -184,7 +184,7 @@ void FWGL_createGLFWWindow(struct FWGL* fwgl) {
     }
 
     glViewport(0, 0, width, height);
-    glfwSetFramebufferSizeCallback(window, glfwSetFramebufferSizeCallback);
+    glfwSetFramebufferSizeCallback(window, FWGL_framebufferSizeCallback);
 
     fwgl->window = window;
     fwgl->error = FWGL_OK;

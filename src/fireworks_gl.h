@@ -28,6 +28,7 @@ struct FWGL {
 
 void FWGL_parseArgs(struct FWGL* fwgl, int argc, char* argv[]);
 void FWGL_createGLFWWindow(struct FWGL* fwgl);
+void FWGL_framebufferSizeCallback(GLFWwindow* window, int width, int height);
 void FWGL_process(struct FWGL* fwgl);
 void FWGL_getCircleVertices(float radius, float x, float y, float z, float* vertices);
 void FWGL_compileShaders(struct FWGL* fwgl);
