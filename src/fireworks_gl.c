@@ -126,8 +126,7 @@ int main(int argc, char *argv[])
         dNanos = thisEpochNano - lastEpochNano;
         dSecs = dNanos / 1e9;
         lastEpochNano = thisEpochNano;
-        printf("%.6fs\n", dSecs);
-        printf("%ffps\n", 1/dSecs);
+        printf("\n%.6fs\n%ffps\n", dSecs, 1 / dSecs);
 
         FWGL_process(&fwgl, dSecs);
         FWGL_render(&fwgl);
