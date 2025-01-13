@@ -5,6 +5,7 @@
 #include <time.h>
 
 #include "fireworks_gl.h"
+#include "fireworks_gl_process.h"
 
 const int MAX_PARTICLES = 200;
 
@@ -227,6 +228,8 @@ void FWGL_process(struct FWGL* fwgl, double dSecs) {
         printf("Input detected! Triggering close...\n");
         glfwSetWindowShouldClose(fwgl->window, TRUE);
     }
+
+    MoveParticles();
 }
 
 void FWGL_compileShaders(struct FWGL* fwgl) {
