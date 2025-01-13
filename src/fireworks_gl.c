@@ -2,6 +2,7 @@
 #include <GLFW/glfw3.h>
 #include <stdio.h>
 #include <string.h>
+#include <time.h>
 
 #include "fireworks_gl.h"
 
@@ -107,9 +108,28 @@ int main(int argc, char *argv[])
     glfwSwapInterval(0);
     FWGL_prepareBuffers(&fwgl);
 
-    while (!glfwWindowShouldClose(fwgl.window)) {
+    // Set up timing
+    long long lastEpochNano = 0;
+    long long thisEpochNano = 0;
+    struct timespec ts;
 
-        FWGL_process(&fwgl);
+    timespec_get(&ts, TIME_UTC);
+    lastEpochNano = ts.tv_sec * 1e9 + ts.tv_nsec;
+    thisEpochNano = lastEpochNano + 1;
+
+    long long dNanos;
+    double dSecs;
+
+    while (!glfwWindowShouldClose(fwgl.window)) {
+        timespec_get(&ts, TIME_UTC);
+        thisEpochNano = ts.tv_sec * 1e9 + ts.tv_nsec;
+        dNanos = thisEpochNano - lastEpochNano;
+        dSecs = dNanos / 1e9;
+        lastEpochNano = thisEpochNano;
+        printf("%.6fs\n", dSecs);
+        printf("%ffps\n", 1/dSecs);
+
+        FWGL_process(&fwgl, dSecs);
         FWGL_render(&fwgl);
 
         glfwSwapBuffers(fwgl.window);
@@ -200,26 +220,13 @@ void FWGL_framebufferSizeCallback(GLFWwindow* window, int width, int height) {
     glViewport(0, 0, width, height);
 }
 
-void FWGL_process(struct FWGL* fwgl) {
+void FWGL_process(struct FWGL* fwgl, double dSecs) {
     if (GLFW_PRESS == glfwGetKey(fwgl->window, GLFW_KEY_SPACE)
             || GLFW_PRESS == glfwGetKey(fwgl->window, GLFW_KEY_ENTER)
             || GLFW_PRESS == glfwGetMouseButton(fwgl->window, GLFW_MOUSE_BUTTON_LEFT)
         ) {
         printf("Input detected! Triggering close...\n");
         glfwSetWindowShouldClose(fwgl->window, TRUE);
-    }
-}
-
-void FWGL_getCircleVertices(float radius, float x, float y, float z, float vertices[]) {
-    int count = (sizeof(circleVertices) / sizeof(float));
-
-    for (int i = 0; i < count; i += 3) {
-        float tx = circleVertices[i] * radius + x;
-        float ty = circleVertices[i + 1] * radius + y;
-        float tz = circleVertices[i + 2] * radius + z;
-        vertices[i] = tx;
-        vertices[i + 1] = ty;
-        vertices[i + 2] = tz;
     }
 }
 
