@@ -270,9 +270,9 @@ void FWGL_prepareBuffers(struct FWGL* fwgl) {
     // Translations
     float data[] = {
          0.5f,  0.5f,
-    //    -0.5f,  0.5f,
-    //    -0.5f, -0.5f,
-    //     0.5f, -0.5f
+        -0.5f,  0.5f,
+        -0.5f, -0.5f,
+         0.5f, -0.5f
     };
     glGenBuffers(1, &dataVBO);
     glBindBuffer(GL_ARRAY_BUFFER, dataVBO);
@@ -318,5 +318,5 @@ void FWGL_render(struct FWGL* fwgl) {
 
     glUseProgram(fwgl->shaderProgram);
     glBindVertexArray(fwgl->VAO);
-    glDrawElementsInstanced(GL_TRIANGLES, indexCount, GL_UNSIGNED_INT, 0, 1);
+    glDrawElementsInstanced(GL_TRIANGLES, indexCount, GL_UNSIGNED_INT, 0, 4);
 }
