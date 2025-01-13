@@ -25,16 +25,16 @@ SHADER(     \tFragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f);     )
 SHADER(     };                                              )"\0";
 
 
-const float unitRadiusCircleVertices[] = {
+const float circleVertices[] = {
      1.000f,  0.000f, 0.0f,
      0.866f,  0.500f, 0.0f,
      0.707f,  0.707f, 0.0f,
      0.500f,  0.866f, 0.0f,
 
      0.000f,  1.000f, 0.0f,
-    -0.866f,  0.500f, 0.0f,
-    -0.707f,  0.707f, 0.0f,
     -0.500f,  0.866f, 0.0f,
+    -0.707f,  0.707f, 0.0f,
+    -0.866f,  0.500f, 0.0f,
 
     -1.000f,  0.000f, 0.0f,
     -0.866f, -0.500f, 0.0f,
@@ -42,19 +42,28 @@ const float unitRadiusCircleVertices[] = {
     -0.500f, -0.866f, 0.0f,
 
      0.000f, -1.000f, 0.0f,
-     0.866f, -0.500f, 0.0f,
-     0.707f, -0.707f, 0.0f,
      0.500f, -0.866f, 0.0f,
+     0.707f, -0.707f, 0.0f,
+     0.866f, -0.500f, 0.0f,
 };
-const int unitRadiusCircleIndices[] = {
+const int circleIndices[] = {
     // Edge of the circle
-    0, 1, 2,
-    2, 3, 4, 
-    4, 5, 6,
-    6, 7, 0,
-    // Fill the inside
-    2, 4, 6,
-    2, 6, 0
+     0,  1,  2,
+     2,  3,  4, 
+     4,  5,  6,
+     6,  7,  8,
+     8,  9, 10,
+    10, 11, 12,
+    12, 13, 14,
+    14, 15,  0,
+    // 
+     0,  2,  4,
+     4,  6,  8,
+     8, 10, 12,
+    12, 14,  0,
+    //
+     0,  4,  8,
+     8, 12,  0
 };
 
 int main(int argc, char *argv[])
@@ -81,12 +90,15 @@ int main(int argc, char *argv[])
         return fwgl.error;
     }
 
-    FWGL_initRender(&fwgl);
+    FWGL_compileShaders(&fwgl);
     if (fwgl.error != FWGL_OK) {
         printf("Failed to set up rendering infrastructure!");
         glfwTerminate();
         return fwgl.error;
     }
+
+    //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    FWGL_prepareBuffers(&fwgl);
 
     while (!glfwWindowShouldClose(fwgl.window)) {
 
@@ -97,6 +109,11 @@ int main(int argc, char *argv[])
         glfwPollEvents();
     }
     printf("Shutting down...\n");
+
+    glDeleteVertexArrays(1, &(fwgl.VAO));
+    glDeleteBuffers(1, &(fwgl.VBO));
+    glDeleteBuffers(1, &(fwgl.EBO));
+    glDeleteProgram(fwgl.shaderProgram);
 
     glfwTerminate();
     return FWGL_OK;
@@ -186,7 +203,20 @@ void FWGL_process(struct FWGL* fwgl) {
     }
 }
 
-void FWGL_initRender(struct FWGL* fwgl) {
+void FWGL_getCircleVertices(float radius, float x, float y, float z, float vertices[]) {
+    int count = (sizeof(circleVertices) / sizeof(float));
+
+    for (int i = 0; i < count; i += 3) {
+        float tx = circleVertices[i] * radius + x;
+        float ty = circleVertices[i + 1] * radius + y;
+        float tz = circleVertices[i + 2] * radius + z;
+        vertices[i] = tx;
+        vertices[i + 1] = ty;
+        vertices[i + 2] = tz;
+    }
+}
+
+void FWGL_compileShaders(struct FWGL* fwgl) {
     printf("\nVertex Shader:\n%s\n", vertexShaderSource);
     printf("\nFragment Shader:\n%s\n", fragmentShaderSource);
 
@@ -231,11 +261,43 @@ void FWGL_initRender(struct FWGL* fwgl) {
     glDeleteShader(vertexShader);
     glDeleteShader(fragmentShader);
     printf("Successfully compiled and linked shader program!\n");
+}
 
+void FWGL_prepareBuffers(struct FWGL* fwgl) {
+    unsigned int VAO, VBO, EBO;
+    glGenVertexArrays(1, &VAO);
+    glGenBuffers(1, &VBO);
+    glGenBuffers(1, &EBO);
 
+    glBindVertexArray(VAO);
+
+    float vertices[48];
+    FWGL_getCircleVertices(0.5, 0.5, 0.5, 0, &vertices);
+
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(circleIndices), circleIndices, GL_STATIC_DRAW);
+
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
+
+    fwgl->VAO = VAO;
+    fwgl->VBO = VBO;
+    fwgl->EBO = EBO;
 }
 
 void FWGL_render(struct FWGL* fwgl) {
     glClearColor(0, 0, 0, 1);
     glClear(GL_COLOR_BUFFER_BIT);
+
+    int indexCount = (int)(sizeof(circleIndices) / sizeof(int));
+
+    glUseProgram(fwgl->shaderProgram);
+    glBindVertexArray(fwgl->VAO);
+    glDrawElements(GL_TRIANGLES, indexCount, GL_UNSIGNED_INT, 0);
 }

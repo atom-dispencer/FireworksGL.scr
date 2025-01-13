@@ -21,6 +21,7 @@ struct FWGL {
 	GLFWwindow* window;
 
 	unsigned int shaderProgram;
+	unsigned int VAO, VBO, EBO;
 };
 
 #define TO_GLCOLOR(b) (b / 255.0f)
@@ -28,5 +29,7 @@ struct FWGL {
 void FWGL_parseArgs(struct FWGL* fwgl, int argc, char* argv[]);
 void FWGL_createGLFWWindow(struct FWGL* fwgl);
 void FWGL_process(struct FWGL* fwgl);
-void FWGL_initRender(struct FWGL* fwgl);
+void FWGL_getCircleVertices(float radius, float x, float y, float z, float* vertices);
+void FWGL_compileShaders(struct FWGL* fwgl);
+void FWGL_prepareBuffers(struct FWGL* fwgl);
 void FWGL_render(struct FWGL* fwgl);
