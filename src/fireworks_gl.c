@@ -11,18 +11,22 @@ const char* vertexShaderSource =
 SHADER(     #version 330 core                                       )
 SHADER(     layout(location = 0) in vec3 aPos;                      )
 SHADER(     layout(location = 1) in vec2 aTranslate;                )
+SHADER(     layout(location = 2) in vec3 aColour;                   )
+SHADER(     out vec3 vertexColour;                                  )
 SHADER(     void main()                                             )
 SHADER(     {                                                       )
 SHADER(     \t gl_Position = vec4(aPos.x + aTranslate.x, aPos.y + aTranslate.y, aPos.z, 1.0);  )
+SHADER(     \t vertexColour = aColour;                              )
 SHADER(     }                                                       )"\0";
 
 
 const char* fragmentShaderSource =
 SHADER(     #version 330 core                               )
 SHADER(     out vec4 FragColor;                             )
+SHADER(     in vec3 vertexColour;                           )
 SHADER(     void main()                                     )
 SHADER(     {                                               )
-SHADER(     \t FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f);     )
+SHADER(     \t FragColor = vec4(vertexColour, 1.0f);        )
 SHADER(     };                                              )"\0";
 
 
@@ -98,7 +102,7 @@ int main(int argc, char *argv[])
         return fwgl.error;
     }
 
-    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     FWGL_prepareBuffers(&fwgl);
 
     while (!glfwWindowShouldClose(fwgl.window)) {
@@ -265,18 +269,30 @@ void FWGL_compileShaders(struct FWGL* fwgl) {
 }
 
 void FWGL_prepareBuffers(struct FWGL* fwgl) {
-    unsigned int dataVBO, VAO, vertexVBO, EBO;
+    unsigned int translateVBO, colourVBO, VAO, vertexVBO, EBO;
 
     // Translations
-    float data[] = {
+    float translations[] = {
          0.5f,  0.5f,
         -0.5f,  0.5f,
         -0.5f, -0.5f,
          0.5f, -0.5f
     };
-    glGenBuffers(1, &dataVBO);
-    glBindBuffer(GL_ARRAY_BUFFER, dataVBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(data), &data, GL_STATIC_DRAW);
+    glGenBuffers(1, &translateVBO);
+    glBindBuffer(GL_ARRAY_BUFFER, translateVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(translations), &translations, GL_STATIC_DRAW);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+    // Translations
+    float colours[] = {
+        1.0f, 0.0f, 0.0f,
+        0.0f, 1.0f, 0.0f,
+        0.0f, 0.0f, 1.0f,
+        1.0f, 1.0f, 0.0f,
+    };
+    glGenBuffers(1, &colourVBO);
+    glBindBuffer(GL_ARRAY_BUFFER, colourVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(colours), &colours, GL_STATIC_DRAW);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 
     // Vertices
@@ -297,11 +313,16 @@ void FWGL_prepareBuffers(struct FWGL* fwgl) {
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
     // 2 floats (translate x,y)
     glEnableVertexAttribArray(1);
-    glBindBuffer(GL_ARRAY_BUFFER, dataVBO);
+    glBindBuffer(GL_ARRAY_BUFFER, translateVBO);
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
+    // 3 floats (colour r,g,b)
+    glEnableVertexAttribArray(2);
+    glBindBuffer(GL_ARRAY_BUFFER, colourVBO);
+    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
 
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glVertexAttribDivisor(1, 1); // Stride of 1 between swapping attributes
+    glVertexAttribDivisor(2, 1); // Stride of 1 between swapping attributes
 
     glBindVertexArray(0);
 
