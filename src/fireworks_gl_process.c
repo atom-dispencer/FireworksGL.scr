@@ -1,4 +1,5 @@
 #include "fireworks_gl_process.h"
+#include <random>
 
 const int MAX_ROCKETS = 1;
 struct Particle* PARTICLES[200];
@@ -6,7 +7,7 @@ int MAX_PARTICLES = sizeof(PARTICLES) / sizeof(struct Particle);
 int currentRockets = 0;
 int currentParticles = 0;
 
-int RandInRange(int lower, int upper) {
+int RandIntRange(int lower, int upper) {
     int r = rand();
 
     if (upper < lower) {
@@ -20,6 +21,10 @@ int RandInRange(int lower, int upper) {
     return n;
 }
 
+double RandDouble() {
+    return (double)rand() / (double)RAND_MAX;
+}
+
 void DeleteParticle(Particle& p) {
     if (p.type == PT_SPARK_ROCKET) {
         currentRockets--;
@@ -29,28 +34,27 @@ void DeleteParticle(Particle& p) {
     currentParticles--;
 }
 
-Color RandomBrightColour() {
-    int offset = RandInRange(0, 3);
-    int channels[3] = { 0xff, 0xff, 0xff };
+float* RandomBrightColour() {
+    int offset = RandIntRange(0, 3);
+    float rgba[4] = { 0, 0, 0, 1 };
 
     for (int i = 0; i < 3; i++) {
         int index = (offset + i) % 3;
 
         switch (index) {
         case 0:
-            channels[i] = 0;
+            rgba[i] = 0;
             break;
         case 1:
-            channels[i] = 255;
+            rgba[i] = 1;
             break;
         case 2:
-            channels[i] = RandInRange(0, 255);
+            rgba[i] = RandDouble();
             break;
         }
     }
 
-
-    return Color(0xff, channels[0], channels[1], channels[2]);
+    return rgba;
 }
 
 Particle& ReviveDeadParticle() {
@@ -242,7 +246,7 @@ void MoveParticles(HWND hWnd) {
 
                 MakePTSparkRocket(p);
 
-                p.pX = RandInRange(rc.left + 200, rc.right - 200);
+                p.pX = RandIntRange(rc.left + 200, rc.right - 200);
                 p.pY = rc.bottom + 50;
 
                 p.isAlive = true;
