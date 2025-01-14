@@ -25,12 +25,12 @@ double RandDouble() {
     return (double)rand() / (double)RAND_MAX;
 }
 
-void DeleteParticle(Particle& p) {
-    if (p.type == PT_SPARK_ROCKET) {
+void DeleteParticle(struct Particle* p) {
+    if (p->type == PT_SPARK_ROCKET) {
         currentRockets--;
     }
 
-    p.isAlive = false;
+    p->isAlive = 0;
     currentParticles--;
 }
 
@@ -206,23 +206,8 @@ void KillPTSparkRocket(Particle& rocket) {
 void KillPTHaze(Particle& p) {
 }
 
-float timeSinceRocketCount = 0;
-auto lastStep = std::chrono::high_resolution_clock::now();
-void MoveParticles(HWND hWnd) {
-    auto thisStep = std::chrono::high_resolution_clock::now();
-    float dSecs = std::chrono::duration_cast<std::chrono::nanoseconds>(thisStep - lastStep).count() * 1.0e-9;
-    lastStep = thisStep;
-
-    if (isPreview) {
-        frameTimes[frameTimeIndex++] = dSecs;
-    }
-
-    RECT rc;
-    GetClientRect(
-        hWnd,
-        &rc
-    );
-
+void MoveParticles(struct Particle particles[], int width, int height, double dSecs) {
+    
     // Sometimes the rocket count gets out of sync?
     // No idea how that happens, but here's a bodge for it
     int rocketCheck = 0;

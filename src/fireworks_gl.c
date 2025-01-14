@@ -229,7 +229,10 @@ void FWGL_process(struct FWGL* fwgl, double dSecs) {
         glfwSetWindowShouldClose(fwgl->window, TRUE);
     }
 
-    MoveParticles();
+    int width;
+    int height;
+    glfwGetWindowSize(fwgl->window, &width, &height);
+    MoveParticles(fwgl->particles, width, height, dSecs);
 }
 
 void FWGL_compileShaders(struct FWGL* fwgl) {
