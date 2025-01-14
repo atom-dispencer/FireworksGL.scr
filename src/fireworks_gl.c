@@ -138,7 +138,7 @@ int main(int argc, char *argv[])
     printf("Shutting down...\n");
 
     glDeleteVertexArrays(1, &(fwgl.VAO));
-    glDeleteBuffers(1, &(fwgl.VBO));
+    glDeleteBuffers(1, &(fwgl.vertexVBO));
     glDeleteBuffers(1, &(fwgl.EBO));
     glDeleteProgram(fwgl.shaderProgram);
 
@@ -282,17 +282,22 @@ void FWGL_compileShaders(struct FWGL* fwgl) {
 void FWGL_prepareBuffers(struct FWGL* fwgl) {
     unsigned int dataVBO, VAO, vertexVBO, EBO;
 
-    float data[] = {
-        // Translate x,y,z      // Colour r,g,b,a           Radius
-         0.5f,  0.5f,  0.0f,    1.0f, 0.0f, 0.0f, 1.0f,     0.5f,
-        -0.5f,  0.5f,  0.0f,    0.0f, 1.0f, 0.0f, 1.0f,     0.4f,
-        -0.5f, -0.5f,  0.0f,    0.0f,  0.0f, 1.0f, 1.0f,    0.3f,
-         0.5f, -0.5f,  0.0f,    1.0f,  1.0f, 0.0f, 1.0f,    0.2f,
-    };
+    //float data[] = {
+    //    // Translate x,y,z      // Colour r,g,b,a           Radius
+    //     0.5f,  0.5f,  0.0f,    1.0f, 0.0f, 0.0f, 1.0f,     0.5f,
+    //    -0.5f,  0.5f,  0.0f,    0.0f, 1.0f, 0.0f, 1.0f,     0.4f,
+    //    -0.5f, -0.5f,  0.0f,    0.0f,  0.0f, 1.0f, 1.0f,    0.3f,
+    //     0.5f, -0.5f,  0.0f,    1.0f,  1.0f, 0.0f, 1.0f,    0.2f,
+    //};
+    //glGenBuffers(1, &dataVBO);
+    //glBindBuffer(GL_ARRAY_BUFFER, dataVBO);
+    //glBufferData(GL_ARRAY_BUFFER, sizeof(data), &data, GL_STATIC_DRAW);
+    //glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+    // 3 * Translate (x,y,z)
+    // 4 * Colour (r,g,b,a)
+    // 1 * Radius (r)
     glGenBuffers(1, &dataVBO);
-    glBindBuffer(GL_ARRAY_BUFFER, dataVBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(data), &data, GL_STATIC_DRAW);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
 
     // Vertices
     glGenVertexArrays(1, &VAO);
@@ -328,7 +333,8 @@ void FWGL_prepareBuffers(struct FWGL* fwgl) {
     glBindVertexArray(0);
 
     fwgl->VAO = VAO;
-    fwgl->VBO = vertexVBO;
+    fwgl->vertexVBO = vertexVBO;
+    fwgl->dataVBO = dataVBO;
     fwgl->EBO = EBO;
 }
 
@@ -337,11 +343,15 @@ void FWGL_render(struct FWGL* fwgl) {
     struct Particle* particles;
     struct Particle p;
     int ptr = 0;
+
+    fwgl->liveParticles = 0;
+
     for (int i = 0; i < MAX_PARTICLES; i++) {
         p = particles[i];
         if (!p.isAlive) {
             continue;
         }
+        fwgl->liveParticles++;
 
         struct ParticleRenderData data;
         // Translate (x,y,z)
@@ -361,6 +371,11 @@ void FWGL_render(struct FWGL* fwgl) {
 
     glClearColor(0, 0, 0, 1);
     glClear(GL_COLOR_BUFFER_BIT);
+
+    int bufferSize = sizeof(struct ParticleRenderData) * fwgl->liveParticles;
+    glBindBuffer(GL_ARRAY_BUFFER, fwgl->dataVBO);
+    glBufferData(GL_ARRAY_BUFFER, bufferSize, &(fwgl->renderData), GL_STATIC_DRAW);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
 
     int indexCount = (int)(sizeof(circleIndices) / sizeof(int));
 

@@ -29,9 +29,10 @@ struct FWGL {
 	GLFWwindow* window;
 
 	unsigned int shaderProgram;
-	unsigned int VAO, VBO, EBO;
+	unsigned int VAO, vertexVBO, dataVBO, EBO;
 
 	int maxParticles;
+	int liveParticles;
 	struct Particle particles[];
 	struct ParticleRenderData renderData[];
 };
