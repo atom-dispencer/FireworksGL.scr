@@ -1,3 +1,5 @@
+#include "fireworks_gl_process.h"
+
 typedef uint8_t BOOL;
 #define TRUE 1
 #define FALSE 0
@@ -15,6 +17,12 @@ enum FWGL_Error {
 	FWGL_ERROR_INIT_SHADERLINK = 106,
 };
 
+struct ParticleRenderData {
+	float translate[3];
+	float colour[4];
+	float radius;
+};
+
 struct FWGL {
 	enum FWGL_Error error;
 	BOOL is_preview;
@@ -22,6 +30,10 @@ struct FWGL {
 
 	unsigned int shaderProgram;
 	unsigned int VAO, VBO, EBO;
+
+	int maxParticles;
+	struct Particle particles[];
+	struct ParticleRenderData renderData[];
 };
 
 #define TO_GLCOLOR(b) (b / 255.0f)

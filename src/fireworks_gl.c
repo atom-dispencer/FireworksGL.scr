@@ -333,6 +333,32 @@ void FWGL_prepareBuffers(struct FWGL* fwgl) {
 }
 
 void FWGL_render(struct FWGL* fwgl) {
+
+    struct Particle* particles;
+    struct Particle p;
+    int ptr = 0;
+    for (int i = 0; i < MAX_PARTICLES; i++) {
+        p = particles[i];
+        if (!p.isAlive) {
+            continue;
+        }
+
+        struct ParticleRenderData data;
+        // Translate (x,y,z)
+        data.translate[0] = p.position[0];
+        data.translate[1] = p.position[1];
+        data.translate[2] = p.position[2];
+        // Colour (r,g,b,a)
+        data.colour[0] = p.color[0];
+        data.colour[1] = p.color[1];
+        data.colour[2] = p.color[2];
+        data.colour[3] = p.color[3];
+        // Radius
+        data.radius = p.radius;
+
+        fwgl->renderData[ptr] = data;
+    }
+
     glClearColor(0, 0, 0, 1);
     glClear(GL_COLOR_BUFFER_BIT);
 

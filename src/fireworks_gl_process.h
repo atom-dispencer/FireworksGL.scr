@@ -20,7 +20,7 @@ struct Particle {
 };
 
 float* RandomBrightColour();
-int RandInRange(int lower, int upper);
+int RandIntRange(int lower, int upper);
 void MoveParticles(HWND hWnd);
 void DeleteParticle(struct Particle* p);
 
