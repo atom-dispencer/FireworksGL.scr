@@ -240,7 +240,6 @@ void KillPTHaze(struct FWGLSimulation* simulation, int particle) {
 }
 
 void MoveParticles(struct FWGLSimulation* simulation, int width, int height, float dSecs) {
-    
     // Sometimes the rocket count gets out of sync?
     // No idea how that happens, but here's a bodge for it
     int rocketCheck = 0;
@@ -263,7 +262,6 @@ void MoveParticles(struct FWGLSimulation* simulation, int width, int height, flo
         // Create new rockets
         if (!p->isAlive) {
             if (simulation->maxRockets > simulation->liveRockets) {
-
                 MakePTSparkRocket(simulation, pId);
 
                 p->position[0] = (float) RandIntRange(200, width - 200);

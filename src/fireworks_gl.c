@@ -8,8 +8,6 @@
 #include "fireworks_gl.h"
 #include "fireworks_gl_process.h"
 
-const int MAX_PARTICLES = 200;
-
 const char* vertexShaderSource =
 SHADER(     #version 330 core                                               )
 SHADER(     layout(location = 0) in vec3 aBasePos;                          )
@@ -100,6 +98,7 @@ int main(int argc, char *argv[])
     printf("FireworksGL!\n");
 
     struct FWGL* fwgl = malloc(sizeof(struct FWGL));
+    FWGL_Init(fwgl, 200, 1);
 
     FWGL_parseArgs(fwgl, argc, argv);
     if (fwgl->error != FWGL_OK) {
@@ -142,6 +141,7 @@ int main(int argc, char *argv[])
     long long dNanos;
     float dSecs;
 
+    int i = 0;
     while (!glfwWindowShouldClose(fwgl->window)) {
         timespec_get(&ts, TIME_UTC);
         thisEpochNano = (long long)(ts.tv_sec * 1e9 + ts.tv_nsec);
@@ -155,6 +155,8 @@ int main(int argc, char *argv[])
 
         glfwSwapBuffers(fwgl->window);
         glfwPollEvents();
+
+        printf("%d\n", i++);
     }
     printf("Shutting down...\n");
 
@@ -181,6 +183,47 @@ enum FWGL_Error FWGL_Init(struct FWGL* fwgl, int maxParticles, int maxRockets) {
     simulation.particles = malloc(sizeof(struct Particle) * maxParticles);
     simulation.timeSinceRocketCount = 0;
     fwgl->simulation = simulation;
+
+    struct Particle defaultParticle;
+    defaultParticle.isAlive = 0;
+    defaultParticle.position[0] = 0;
+    defaultParticle.position[1] = 0;
+    defaultParticle.position[2] = 0;
+    defaultParticle.velocity[0] = 0;
+    defaultParticle.velocity[1] = 0;
+    defaultParticle.velocity[2] = 0;
+    defaultParticle.acceleration[0] = 0;
+    defaultParticle.acceleration[1] = 0;
+    defaultParticle.acceleration[2] = 0;
+    defaultParticle.colour[0] = 1;
+    defaultParticle.colour[1] = 1;
+    defaultParticle.colour[2] = 1;
+    defaultParticle.colour[3] = 1;
+    defaultParticle.children = 0;
+    defaultParticle.radius = 0;
+    defaultParticle.remainingLife = 0;
+    defaultParticle.timeSinceLastEmission = 0;
+    defaultParticle.type = PT_HAZE;
+
+    for (int i = 0; i < simulation.maxParticles; i++) {
+        fwgl->simulation.particles[i] = defaultParticle;
+    }
+
+    struct ParticleRenderData defaultRenderData;
+    defaultRenderData.translate[0] = 0;
+    defaultRenderData.translate[1] = 0;
+    defaultRenderData.translate[2] = 0;
+    defaultRenderData.colour[0] = 1;
+    defaultRenderData.colour[1] = 1;
+    defaultRenderData.colour[2] = 1;
+    defaultRenderData.colour[3] = 1;
+    defaultRenderData.radius = 1;
+    defaultRenderData.remainingLife = 0;
+    defaultRenderData.particleType = PT_HAZE;
+
+    for (int i = 0; i < simulation.maxParticles; i++) {
+        fwgl->renderData[i] = defaultRenderData;
+    }
 
     fwgl->error = FWGL_OK;
     return FWGL_OK;
@@ -408,7 +451,7 @@ void FWGL_render(struct FWGL* fwgl) {
 
     int renderParticles = 0;
 
-    for (int i = 0; i < MAX_PARTICLES; i++) {
+    for (int i = 0; i < simulation->maxParticles; i++) {
         p = &(simulation->particles[i]);
         if (!p->isAlive) {
             continue;
@@ -430,7 +473,7 @@ void FWGL_render(struct FWGL* fwgl) {
         // Remaining Life (l)
         data.remainingLife = p->remainingLife;
         // Particle Type (t)
-        data.particleType = p->type;
+        data.particleType = (int) p->type;
 
         fwgl->renderData[ptr] = data;
     }
@@ -438,14 +481,19 @@ void FWGL_render(struct FWGL* fwgl) {
     glClearColor(0, 0, 0, 1);
     glClear(GL_COLOR_BUFFER_BIT);
 
-    int bufferSize = sizeof(struct ParticleRenderData) * renderParticles;
-    glBindBuffer(GL_ARRAY_BUFFER, fwgl->dataVBO);
-    glBufferData(GL_ARRAY_BUFFER, bufferSize, &(fwgl->renderData), GL_STATIC_DRAW);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    // THE ERROR IS IN HERE!!!
+    // WHEN RENDERPARTICLES == 0, there is no error!!
+    // nvoglv64 is in the Nvidia driver, so I'm probably accessing memory I'm not allowed to!
+    if (renderParticles > 0) {
+        int bufferSize = sizeof(struct ParticleRenderData) * renderParticles;
+        glBindBuffer(GL_ARRAY_BUFFER, fwgl->dataVBO);
+        glBufferData(GL_ARRAY_BUFFER, bufferSize, fwgl->renderData, GL_STATIC_DRAW);
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-    int indexCount = (int)(sizeof(circleIndices) / sizeof(int));
+        int indexCount = (int)(sizeof(circleIndices) / sizeof(int));
 
-    glUseProgram(fwgl->shaderProgram);
-    glBindVertexArray(fwgl->VAO);
-    glDrawElementsInstanced(GL_TRIANGLES, indexCount, GL_UNSIGNED_INT, 0, 4);
+        glUseProgram(fwgl->shaderProgram);
+        glBindVertexArray(fwgl->VAO);
+        glDrawElementsInstanced(GL_TRIANGLES, indexCount, GL_UNSIGNED_INT, 0, 4);
+    }
 }

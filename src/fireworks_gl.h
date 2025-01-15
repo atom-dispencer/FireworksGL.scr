@@ -20,7 +20,7 @@ struct ParticleRenderData {
 	float colour[4];
 	float radius;
 	float remainingLife;
-	float particleType;
+	int particleType;
 };
 
 struct FWGL {
