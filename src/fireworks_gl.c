@@ -45,7 +45,7 @@ const char *fragmentShaderSource =
     "   in float remainingLife;                                         \n"
     "   flat in int particleType;                                       \n"
     "   void main() {                                                   \n"
-    "       FragColor = vec4(vertexColour);                             \n"
+    "       FragColor = vec4(vertexColour);                             \n"/*
     "       if (particleType == 0 && remainingLife < 0.5) {             \n"
     "           float factor = 2 * remainingLife;                       \n"
     "           FragColor.w = factor * factor;                          \n"
@@ -53,7 +53,7 @@ const char *fragmentShaderSource =
     "       if (particleType == 2) {                                    \n"
     "           float factor = remainingLife / 3;                       \n"
     "           FragColor.w = 0.5 * factor * factor;                    \n"
-    "       }                                                           \n"
+    "       }                                                           \n"*/
     "   }                                                               \n"
     "\0";
 
@@ -83,7 +83,7 @@ int main(int argc, char *argv[]) {
   printf("FireworksGL!\n");
 
   struct FWGL *fwgl = malloc(sizeof(struct FWGL));
-  FWGL_Init(fwgl, 200, 1);
+  FWGL_Init(fwgl, 100, 1);
 
   FWGL_parseArgs(fwgl, argc, argv);
   if (fwgl->error != FWGL_OK) {
@@ -439,6 +439,8 @@ void FWGL_render(struct FWGL *fwgl) {
   struct Particle *p;
 
   int renderParticles = 0;
+  
+  printf("live:%d\n", simulation->liveParticles);
 
   for (int pId = 0; pId < simulation->maxParticles; pId++) {
     p = &(simulation->particles[pId]);

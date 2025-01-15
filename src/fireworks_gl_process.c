@@ -56,6 +56,8 @@ void RandomBrightColour(float rgba[4]) {
 }
 
 int ReviveDeadParticle(struct FWGLSimulation* simulation) {
+
+    // First, look for dead particles
     for (int i = 0; i < simulation->maxParticles; i++) {
         struct Particle* c = &(simulation->particles[i]);
         if (!c->isAlive) {
@@ -65,8 +67,17 @@ int ReviveDeadParticle(struct FWGLSimulation* simulation) {
         }
     }
 
+    // Then, look for already alive haze
+    for (int i = 0; i < simulation->maxParticles; i++) {
+        struct Particle* c = &(simulation->particles[i]);
+        if (c->type == PT_HAZE) {
+            // Don't increment because we're just reassigning
+            return i;
+        }
+    }
+
     // I hope this never happens
-    print("Particle overflow!\n");
+    printf("Particle overflow!\n");
     return RandIntRange(0, simulation->maxParticles);
 }
 
@@ -133,6 +144,8 @@ void ProcessPTSparkRocket(struct FWGLSimulation* simulation, int particle, float
 
     rocket->velocity[0] += RandIntRange(-30, 30) / 10.0f;
 
+    return;
+
     if (rocket->timeSinceLastEmission > 0.05f) {
         rocket->timeSinceLastEmission = 0;
 
@@ -195,6 +208,8 @@ void KillPTSpark(struct FWGLSimulation* simulation, int particle) {
 void KillPTSparkRocket(struct FWGLSimulation* simulation, int particle) {
     struct Particle* rocket = &(simulation->particles[particle]);
 
+    return;
+
     float xTotal = 0;
     float yTotal = 0;
     float zTotal = 0;
@@ -247,7 +262,7 @@ void MoveParticles(struct FWGLSimulation* simulation, int width, int height, flo
     if (simulation->timeSinceRocketCount > 5.0f) {
         for (int i = 0; i < simulation->maxParticles; i++) {
             struct Particle* p = &(simulation->particles[i]);
-            if (p->type == PT_SPARK_ROCKET && p->isAlive) {
+            if ((p->type == PT_SPARK_ROCKET) && (p->isAlive)) { 
                 rocketCheck++;
             }
         }
@@ -257,33 +272,37 @@ void MoveParticles(struct FWGLSimulation* simulation, int width, int height, flo
     }
     simulation->timeSinceRocketCount += dSecs;
 
+    // Make new rockets
+    while (simulation->maxRockets > simulation->liveRockets) {
+        int pId = ReviveDeadParticle(simulation);
+        struct Particle* p = &(simulation->particles[pId]);
+        MakePTSparkRocket(simulation, pId);
+        simulation->liveRockets += 1;
+
+        p->position[0] = (float)RandIntRange(200, width - 200);
+        p->position[1] = 50; // TODO Change back to -50
+        p->position[2] = 0;
+    }
+
+    // Move and process all particles
     for (int pId = 0; pId < simulation->maxParticles; pId++) {
         struct Particle* p = &(simulation->particles[pId]);
 
-        // Create new rockets
+        // Skip dead particles
         if (!p->isAlive) {
-            if (simulation->maxRockets > simulation->liveRockets) {
-                MakePTSparkRocket(simulation, pId);
-
-                p->position[0] = (float) RandIntRange(200, width - 200);
-                p->position[1] = -50;
-                p->position[2] = 0;
-
-                p->isAlive = 1;
-                simulation->liveRockets += 1;
-                simulation->liveParticles += 1;
-            }
-
             continue;
         }
 
         // Make particles older
         p->remainingLife -= dSecs;
-
-        if (p->position[0] < -50 
-            || p->position[0] > width + 50
-            || p->position[1] < -50
-            || p->position[1] > height + 50) {
+        
+        // Kill out of bounds particles
+        // TODO Invert bounds again
+        if (p->position[0] < +50 
+            || p->position[0] > width - 50
+            || p->position[1] < +50
+            || p->position[1] > height - 50) {
+            printf("%d is out of bounds!\n", pId);
             DeleteParticle(simulation, pId);
             continue;
         }
@@ -302,6 +321,7 @@ void MoveParticles(struct FWGLSimulation* simulation, int width, int height, flo
                 break;
             }
 
+            printf("%d is old\n", pId);
             DeleteParticle(simulation, pId);
             continue;
         }
@@ -319,7 +339,7 @@ void MoveParticles(struct FWGLSimulation* simulation, int width, int height, flo
             break;
         }
 
-        // 
+        // Update position and velocity
         p->position[0] += p->velocity[0] * dSecs;
         p->position[1] += p->velocity[1] * dSecs;
         p->position[2] += p->velocity[2] * dSecs;
