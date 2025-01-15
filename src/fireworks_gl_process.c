@@ -1,5 +1,5 @@
 #include "fireworks_gl_process.h"
-#include <random>
+#include <stdlib.h>
 
 int RandIntRange(int lower, int upper) {
     int r = rand();
@@ -16,6 +16,7 @@ int RandIntRange(int lower, int upper) {
 }
 
 double RandDouble() {
+    return 0;
     return (double)rand() / (double)RAND_MAX;
 }
 
@@ -64,7 +65,7 @@ int ReviveDeadParticle(struct FWGLSimulation* simulation) {
     }
 
     // I hope this never happens
-    return RandInRange(0, simulation->maxParticles);
+    return RandIntRange(0, simulation->maxParticles);
 }
 
 void MakePTSparkRocket(struct FWGLSimulation* simulation, int particle) {
@@ -72,8 +73,8 @@ void MakePTSparkRocket(struct FWGLSimulation* simulation, int particle) {
 
     p->type = PT_SPARK_ROCKET;
 
-    p->velocity[0] = RandInRange(-100, 100);
-    p->velocity[1] = RandInRange(-400, -250);
+    p->velocity[0] = RandIntRange(-100, 100);
+    p->velocity[1] = RandIntRange(-400, -250);
     p->velocity[2] = 0;
     p->acceleration[0] = 0;
     p->acceleration[1] = 100;
@@ -85,9 +86,9 @@ void MakePTSparkRocket(struct FWGLSimulation* simulation, int particle) {
     p->colour[2] = colour[2];
     p->colour[3] = colour[3];
 
-    p->remainingLife = RandInRange(10, 40) / 10.0f;
+    p->remainingLife = RandIntRange(10, 40) / 10.0f;
     p->radius = 15;
-    p->children = RandInRange(5, 12);
+    p->children = RandIntRange(5, 12);
 }
 
 void MakePTSpark(struct FWGLSimulation* simulation, int particle) {
@@ -95,8 +96,8 @@ void MakePTSpark(struct FWGLSimulation* simulation, int particle) {
 
     p->type = PT_SPARK;
 
-    p->velocity[0] = RandInRange(-200, 200);
-    p->velocity[1] = RandInRange(-200, 200);
+    p->velocity[0] = RandIntRange(-200, 200);
+    p->velocity[1] = RandIntRange(-200, 200);
     p->velocity[2] = 0;
     p->acceleration[0] = 0;
     p->acceleration[1] = 100;
@@ -127,7 +128,7 @@ void MakePTHaze(struct FWGLSimulation* simulation, int particle) {
 void ProcessPTSparkRocket(struct FWGLSimulation* simulation, int particle, float dSecs) {
     struct Particle* rocket = &(simulation->particles[particle]);
 
-    rocket->velocity[0] += RandInRange(-30, 30) / 10.0f;
+    rocket->velocity[0] += RandIntRange(-30, 30) / 10.0f;
 
     if (rocket->timeSinceLastEmission > 0.05f) {
         rocket->timeSinceLastEmission = 0;
@@ -241,35 +242,35 @@ void MoveParticles(struct FWGLSimulation* simulation, int width, int height, dou
     // Sometimes the rocket count gets out of sync?
     // No idea how that happens, but here's a bodge for it
     int rocketCheck = 0;
-    if (timeSinceRocketCount > 5.0f) {
-        for (int i = 0; i < MAX_PARTICLES; i++) {
-            struct Particle* p = &(PARTICLES[i]);
+    if (simulation->timeSinceRocketCount > 5.0f) {
+        for (int i = 0; i < simulation->maxParticles; i++) {
+            struct Particle* p = &(simulation->particles[i]);
             if (p->type == PT_SPARK_ROCKET && p->isAlive) {
                 rocketCheck++;
             }
         }
 
-        currentRockets = rocketCheck;
-        timeSinceRocketCount = 0;
+        simulation->liveRockets = rocketCheck;
+        simulation->timeSinceRocketCount = 0;
     }
-    timeSinceRocketCount += dSecs;
+    simulation->timeSinceRocketCount += dSecs;
 
-    for (int i = 0; i < MAX_PARTICLES; i++) {
-        struct Particle* p = &(PARTICLES[i]);
+    for (int pId = 0; pId < simulation->maxParticles; pId++) {
+        struct Particle* p = &(simulation->particles[pId]);
 
         // Create new rockets
         if (!p->isAlive) {
-            if (MAX_ROCKETS > currentRockets) {
+            if (simulation->maxRockets > simulation->liveRockets) {
 
-                MakePTSparkRocket(p);
+                MakePTSparkRocket(simulation, pId);
 
                 p->position[0] = RandIntRange(200, width - 200);
                 p->position[1] = -50;
                 p->position[2] = 0;
 
                 p->isAlive = 1;
-                currentRockets += 1;
-                currentParticles += 1;
+                simulation->liveRockets += 1;
+                simulation->liveParticles += 1;
             }
 
             continue;
@@ -282,7 +283,7 @@ void MoveParticles(struct FWGLSimulation* simulation, int width, int height, dou
             || p->position[0] > width + 50
             || p->position[1] < -50
             || p->position[1] > height + 50) {
-            DeleteParticle(p);
+            DeleteParticle(simulation, pId);
             continue;
         }
 
@@ -290,30 +291,30 @@ void MoveParticles(struct FWGLSimulation* simulation, int width, int height, dou
         if (p->remainingLife <= 0) {
             switch (p->type) {
             case PT_SPARK:
-                KillPTSpark(p);
+                KillPTSpark(simulation, pId);
                 break;
             case PT_SPARK_ROCKET:
-                KillPTSparkRocket(p);
+                KillPTSparkRocket(simulation, pId);
                 break;
             case PT_HAZE:
-                KillPTHaze(p);
+                KillPTHaze(simulation, pId);
                 break;
             }
 
-            DeleteParticle(p);
+            DeleteParticle(simulation, pId);
             continue;
         }
 
         // Process different types of particle
         switch (p->type) {
         case PT_SPARK_ROCKET:
-            ProcessPTSparkRocket(p, dSecs);
+            ProcessPTSparkRocket(simulation, pId, dSecs);
             break;
         case PT_SPARK:
-            ProcessPTSpark(p, dSecs);
+            ProcessPTSpark(simulation, pId, dSecs);
             break;
         case PT_HAZE:
-            ProcessPTHaze(p, dSecs);
+            ProcessPTHaze(simulation, pId, dSecs);
             break;
         }
 
