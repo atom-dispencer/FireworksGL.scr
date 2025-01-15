@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
+#include <stdlib.h>
 
 #include "fireworks_gl.h"
 #include "fireworks_gl_process.h"
@@ -10,27 +11,44 @@
 const int MAX_PARTICLES = 200;
 
 const char* vertexShaderSource =
-SHADER(     #version 330 core                                       )
-SHADER(     layout(location = 0) in vec3 aBasePos;                  )
-SHADER(     layout(location = 1) in vec3 aTranslate;                )
-SHADER(     layout(location = 2) in vec4 aColour;                   )
-SHADER(     layout(location = 3) in float radius;                   )
-SHADER(     out vec4 vertexColour;                                  )
-SHADER(     void main()                                             )
-SHADER(     {                                                       )
-SHADER(     \t gl_Position = vec4(aBasePos*radius + aTranslate, 1.0f);      )
-SHADER(     \t vertexColour = aColour;                              )
-SHADER(     }                                                       )"\0";
+SHADER(     #version 330 core                                               )
+SHADER(     layout(location = 0) in vec3 aBasePos;                          )
+SHADER(     layout(location = 1) in vec3 aTranslate;                        )
+SHADER(     layout(location = 2) in vec4 aColour;                           )
+SHADER(     layout(location = 3) in float aRadius;                          )
+SHADER(     layout(location = 4) in float aRemainingLife;                   )
+SHADER(     uniform in vec2 dimensions;                                     )
+SHADER(     out vec4 vertexColour;                                          )
+SHADER(     out float remainingLife;                                        )
+SHADER(     void main()                                                     )
+SHADER(     {                                                               )
+SHADER(     \t gl_Position = vec4(aBasePos*aRadius + aTranslate, 1.0f);     )
+SHADER(     \t gl_Position.x /= (dimensions.x / 2);                         )
+SHADER(     \t gl_Position.y /= (dimensions.y / 2);                         )
+SHADER(     \t gl_Position += vec4(-1, -1, 0, 0);                           )
+SHADER(     \t vertexColour = aColour;                                      )
+SHADER(     \t remainingLife = aRemainingLife;                              )
+SHADER(     }                                                               )"\0";
 
 
 const char* fragmentShaderSource =
-SHADER(     #version 330 core                               )
-SHADER(     out vec4 FragColor;                             )
-SHADER(     in vec4 vertexColour;                           )
-SHADER(     void main()                                     )
-SHADER(     {                                               )
-SHADER(     \t FragColor = vec4(vertexColour);              )
-SHADER(     };                                              )"\0";
+SHADER(     #version 330 core                                       )
+SHADER(     out vec4 FragColor;                                     )
+SHADER(     in vec4 vertexColour;                                   )
+SHADER(     in float remainingLife;                                 )
+SHADER(     in int particleType;                                    )
+SHADER(     void main()                                             )
+SHADER(     {                                                       )
+SHADER(     \t if (particleType == 0 && remainingLife < 0.5) {      )
+SHADER(     \t \t float factor = 2 * remainingLife;                 )
+SHADER(     \t \t vertexColour.w = factor * factor                  )
+SHADER(     \t }                                                    )
+SHADER(     \t if (particleType == 2 && remainingLife < 0.5) {      )
+SHADER(     \t \t float factor = remainingLife / 3;                 )
+SHADER(     \t \t vertexColour.w = 0.5 * factor * factor            )
+SHADER(     \t }                                                    )
+SHADER(     \t FragColor = vec4(vertexColour);                      )
+SHADER(     };                                                      )"\0";
 
 
 const float circleVertices[] = {
@@ -78,12 +96,12 @@ int main(int argc, char *argv[])
 {
     printf("FireworksGL!\n");
 
-    struct FWGL fwgl;
+    struct FWGL* fwgl = malloc(sizeof(struct FWGL));
 
     FWGL_parseArgs(&fwgl, argc, argv);
-    if (fwgl.error != FWGL_OK) {
-        printf("Error parsing arguments: %d\n", fwgl.error);
-        return fwgl.error;
+    if (fwgl->error != FWGL_OK) {
+        printf("Error parsing arguments: %d\n", fwgl->error);
+        return fwgl->error;
     }    
 
     glfwInit();
@@ -92,17 +110,17 @@ int main(int argc, char *argv[])
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
     FWGL_createGLFWWindow(&fwgl);
-    if (fwgl.error != FWGL_OK) {
-        printf("Error creating GLFW window: %d\n", fwgl.error);
+    if (fwgl->error != FWGL_OK) {
+        printf("Error creating GLFW window: %d\n", fwgl->error);
         glfwTerminate();
-        return fwgl.error;
+        return fwgl->error;
     }
 
     FWGL_compileShaders(&fwgl);
-    if (fwgl.error != FWGL_OK) {
+    if (fwgl->error != FWGL_OK) {
         printf("Failed to set up rendering infrastructure!");
         glfwTerminate();
-        return fwgl.error;
+        return fwgl->error;
     }
 
     //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -121,7 +139,7 @@ int main(int argc, char *argv[])
     long long dNanos;
     double dSecs;
 
-    while (!glfwWindowShouldClose(fwgl.window)) {
+    while (!glfwWindowShouldClose(fwgl->window)) {
         timespec_get(&ts, TIME_UTC);
         thisEpochNano = ts.tv_sec * 1e9 + ts.tv_nsec;
         dNanos = thisEpochNano - lastEpochNano;
@@ -132,17 +150,44 @@ int main(int argc, char *argv[])
         FWGL_process(&fwgl, dSecs);
         FWGL_render(&fwgl);
 
-        glfwSwapBuffers(fwgl.window);
+        glfwSwapBuffers(fwgl->window);
         glfwPollEvents();
     }
     printf("Shutting down...\n");
 
-    glDeleteVertexArrays(1, &(fwgl.VAO));
-    glDeleteBuffers(1, &(fwgl.vertexVBO));
-    glDeleteBuffers(1, &(fwgl.EBO));
-    glDeleteProgram(fwgl.shaderProgram);
+    glDeleteVertexArrays(1, &(fwgl->VAO));
+    glDeleteBuffers(1, &(fwgl->vertexVBO));
+    glDeleteBuffers(1, &(fwgl->EBO));
+    glDeleteProgram(fwgl->shaderProgram);
 
     glfwTerminate();
+    return FWGL_OK;
+}
+
+enum FWGL_Error FWGL_Init(struct FWGL* fwgl, int maxParticles, int maxRockets) {
+    fwgl->error = FWGL_ERROR_INIT;
+    fwgl->is_preview = 0;
+    fwgl->window, fwgl->shaderProgram, fwgl->VAO, fwgl->vertexVBO, fwgl->dataVBO, fwgl->EBO = -1;
+    fwgl->renderData = malloc(sizeof(struct ParticleRenderData) * maxParticles);
+
+    struct FWGLSimulation simulation;
+    simulation.maxParticles = maxParticles;
+    simulation.liveParticles = 0;
+    simulation.maxRockets = maxRockets;
+    simulation.liveRockets = 0;
+    simulation.particles = malloc(sizeof(struct Particle) * maxParticles);
+    simulation.timeSinceRocketCount = 0;
+    fwgl->simulation = simulation;
+
+    fwgl->error = FWGL_OK;
+    return FWGL_OK;
+}
+
+enum FWGL_Error FWGL_DeInit(struct FWGL* fwgl) {
+    free(fwgl->renderData);
+    free(fwgl->simulation.particles);
+    free(fwgl);
+
     return FWGL_OK;
 }
 
@@ -232,7 +277,7 @@ void FWGL_process(struct FWGL* fwgl, double dSecs) {
     int width;
     int height;
     glfwGetWindowSize(fwgl->window, &width, &height);
-    MoveParticles(fwgl->particles, width, height, dSecs);
+    MoveParticles(&(fwgl->simulation), width, height, dSecs);
 }
 
 void FWGL_compileShaders(struct FWGL* fwgl) {
@@ -286,20 +331,22 @@ void FWGL_prepareBuffers(struct FWGL* fwgl) {
     unsigned int dataVBO, VAO, vertexVBO, EBO;
 
     //float data[] = {
-    //    // Translate x,y,z      // Colour r,g,b,a           Radius
-    //     0.5f,  0.5f,  0.0f,    1.0f, 0.0f, 0.0f, 1.0f,     0.5f,
-    //    -0.5f,  0.5f,  0.0f,    0.0f, 1.0f, 0.0f, 1.0f,     0.4f,
-    //    -0.5f, -0.5f,  0.0f,    0.0f,  0.0f, 1.0f, 1.0f,    0.3f,
-    //     0.5f, -0.5f,  0.0f,    1.0f,  1.0f, 0.0f, 1.0f,    0.2f,
+    //    // Translate x,y,z      // Colour r,g,b,a           // Radius     // RL   // PT
+    //     0.5f,  0.5f,  0.0f,    1.0f, 0.0f, 0.0f, 1.0f,     0.5f,         1.0f,   2,
+    //    -0.5f,  0.5f,  0.0f,    0.0f, 1.0f, 0.0f, 1.0f,     0.4f,         0.5f,   2,
+    //    -0.5f, -0.5f,  0.0f,    0.0f,  0.0f, 1.0f, 1.0f,    0.3f,         0.3f,   2,
+    //     0.5f, -0.5f,  0.0f,    1.0f,  1.0f, 0.0f, 1.0f,    0.2f,         0.1f,   2,
     //};
     //glGenBuffers(1, &dataVBO);
     //glBindBuffer(GL_ARRAY_BUFFER, dataVBO);
     //glBufferData(GL_ARRAY_BUFFER, sizeof(data), &data, GL_STATIC_DRAW);
     //glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-    // 3 * Translate (x,y,z)
-    // 4 * Colour (r,g,b,a)
-    // 1 * Radius (r)
+    // 3*f Translate (x,y,z)
+    // 4*f Colour (r,g,b,a)
+    // 1*f Radius (r)
+    // 1*f Remaining Life (l)
+    // 1*i Particle Type (t)
     glGenBuffers(1, &dataVBO);
 
     // Vertices
@@ -320,18 +367,26 @@ void FWGL_prepareBuffers(struct FWGL* fwgl) {
     // Translate (x,y,z)
     glBindBuffer(GL_ARRAY_BUFFER, dataVBO);
     glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(struct ParticleRenderData), (void*)0);
     // Colour (r,g,b,a)
     glEnableVertexAttribArray(2);
-    glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
+    glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(struct ParticleRenderData), (void*)(3 * sizeof(float)));
     // Radius (r)
     glEnableVertexAttribArray(3);
-    glVertexAttribPointer(3, 1, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(7 * sizeof(float)));
+    glVertexAttribPointer(3, 1, GL_FLOAT, GL_FALSE, sizeof(struct ParticleRenderData), (void*)(7 * sizeof(float)));
+    // Remaining Life (l)
+    glEnableVertexAttribArray(4);
+    glVertexAttribPointer(4, 1, GL_FLOAT, GL_FALSE, sizeof(struct ParticleRenderData), (void*)(8 * sizeof(float)));
+    // Particle Type (t)
+    glEnableVertexAttribArray(5);
+    glVertexAttribPointer(5, 1, GL_INT, GL_FALSE, sizeof(struct ParticleRenderData), (void*)(9 * sizeof(float)));
 
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glVertexAttribDivisor(1, 1); // Stride of 1 between swapping attributes
     glVertexAttribDivisor(2, 1); // Stride of 1 between swapping attributes
     glVertexAttribDivisor(3, 1); // Stride of 1 between swapping attributes
+    glVertexAttribDivisor(4, 1); // Stride of 1 between swapping attributes
+    glVertexAttribDivisor(5, 1); // Stride of 1 between swapping attributes
 
     glBindVertexArray(0);
 
@@ -343,31 +398,37 @@ void FWGL_prepareBuffers(struct FWGL* fwgl) {
 
 void FWGL_render(struct FWGL* fwgl) {
 
+    struct FWGLSimulation* simulation = &(fwgl->simulation);
+
     struct Particle* particles;
-    struct Particle p;
+    struct Particle* p;
     int ptr = 0;
 
-    fwgl->liveParticles = 0;
+    int renderParticles = 0;
 
     for (int i = 0; i < MAX_PARTICLES; i++) {
-        p = particles[i];
-        if (!p.isAlive) {
+        p = &(simulation->particles[i]);
+        if (!p->isAlive) {
             continue;
         }
-        fwgl->liveParticles++;
+        renderParticles++;
 
         struct ParticleRenderData data;
         // Translate (x,y,z)
-        data.translate[0] = p.position[0];
-        data.translate[1] = p.position[1];
-        data.translate[2] = p.position[2];
+        data.translate[0] = p->position[0];
+        data.translate[1] = p->position[1];
+        data.translate[2] = p->position[2];
         // Colour (r,g,b,a)
-        data.colour[0] = p.color[0];
-        data.colour[1] = p.color[1];
-        data.colour[2] = p.color[2];
-        data.colour[3] = p.color[3];
-        // Radius
-        data.radius = p.radius;
+        data.colour[0] = p->colour[0];
+        data.colour[1] = p->colour[1];
+        data.colour[2] = p->colour[2];
+        data.colour[3] = p->colour[3];
+        // Radius (r)
+        data.radius = p->radius;
+        // Remaining Life (l)
+        data.remainingLife = p->remainingLife;
+        // Particle Type (t)
+        data.particleType = p->type;
 
         fwgl->renderData[ptr] = data;
     }
@@ -375,7 +436,7 @@ void FWGL_render(struct FWGL* fwgl) {
     glClearColor(0, 0, 0, 1);
     glClear(GL_COLOR_BUFFER_BIT);
 
-    int bufferSize = sizeof(struct ParticleRenderData) * fwgl->liveParticles;
+    int bufferSize = sizeof(struct ParticleRenderData) * renderParticles;
     glBindBuffer(GL_ARRAY_BUFFER, fwgl->dataVBO);
     glBufferData(GL_ARRAY_BUFFER, bufferSize, &(fwgl->renderData), GL_STATIC_DRAW);
     glBindBuffer(GL_ARRAY_BUFFER, 0);

@@ -7,20 +7,23 @@ typedef uint8_t BOOL;
 #define SHADER(txt) #txt "\n"
 
 enum FWGL_Error {
-	FWGL_OK = 0,
-	FWGL_ERROR_INIT_ARGCOUNT = 100,
-	FWGL_ERROR_INIT_GLFWWINDOW = 101,
-	FWGL_ERROR_INIT_UNKNOWNARG = 102,
-	FWGL_ERROR_INIT_GLAD = 103,
-	FWGL_ERROR_INIT_COMPILEVERTEX = 104,
-	FWGL_ERROR_INIT_COMPILEFRAGMENT = 105,
-	FWGL_ERROR_INIT_SHADERLINK = 106,
+	FWGL_OK								=   0,
+	FWGL_ERROR_INIT						= 100,
+	FWGL_ERROR_INIT_ARGCOUNT			= 101,
+	FWGL_ERROR_INIT_GLFWWINDOW			= 102,
+	FWGL_ERROR_INIT_UNKNOWNARG			= 103,
+	FWGL_ERROR_INIT_GLAD				= 104,
+	FWGL_ERROR_INIT_COMPILEVERTEX		= 105,
+	FWGL_ERROR_INIT_COMPILEFRAGMENT		= 106,
+	FWGL_ERROR_INIT_SHADERLINK			= 107,
 };
 
 struct ParticleRenderData {
 	float translate[3];
 	float colour[4];
 	float radius;
+	float remainingLife;
+	float particleType;
 };
 
 struct FWGL {
@@ -30,15 +33,13 @@ struct FWGL {
 
 	unsigned int shaderProgram;
 	unsigned int VAO, vertexVBO, dataVBO, EBO;
-
-	int maxParticles;
-	int liveParticles;
-	struct Particle particles[];
-	struct ParticleRenderData renderData[];
+	struct FWGLSimulation simulation;
+	struct ParticleRenderData* renderData;
 };
 
 #define TO_GLCOLOR(b) (b / 255.0f)
 
+enum FWGL_Error FWGL_Init(struct FWGL* fwgl, int maxParticles, int maxRockets);
 void FWGL_parseArgs(struct FWGL* fwgl, int argc, char* argv[]);
 void FWGL_createGLFWWindow(struct FWGL* fwgl);
 void FWGL_framebufferSizeCallback(GLFWwindow* window, int width, int height);
