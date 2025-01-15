@@ -473,7 +473,7 @@ void FWGL_render(struct FWGL* fwgl) {
         // Remaining Life (l)
         data.remainingLife = p->remainingLife;
         // Particle Type (t)
-        data.particleType = (int) p->type;
+        data.particleType = p->type;
 
         fwgl->renderData[ptr] = data;
     }
