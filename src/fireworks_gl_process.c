@@ -75,10 +75,10 @@ void MakePTSparkRocket(struct FWGLSimulation* simulation, int particle) {
     p->type = PT_SPARK_ROCKET;
 
     p->velocity[0] = (float) RandIntRange(-100, 100);
-    p->velocity[1] = (float) RandIntRange(-400, -250);
+    p->velocity[1] = (float) RandIntRange(250, 400);
     p->velocity[2] = 0;
     p->acceleration[0] = 0;
-    p->acceleration[1] = 100;
+    p->acceleration[1] = -100;
     p->acceleration[2] = 0;
 
     float colour[4] = { 0 };
@@ -102,7 +102,7 @@ void MakePTSpark(struct FWGLSimulation* simulation, int particle) {
     p->velocity[1] = (float) RandIntRange(-200, 200);
     p->velocity[2] = 0;
     p->acceleration[0] = 0;
-    p->acceleration[1] = 100;
+    p->acceleration[1] = -100;
     p->acceleration[2] = 0;
 
     p->remainingLife = 1.0f;
@@ -119,8 +119,8 @@ void MakePTHaze(struct FWGLSimulation* simulation, int particle) {
     p->velocity[1] = 0;
     p->velocity[2] = 0;
     p->acceleration[0] = 0;
-    p->acceleration[1] = 8;
-    p->acceleration[0] = 8;
+    p->acceleration[1] = -8;
+    p->acceleration[2] = 0;
 
     p->remainingLife = 3.0f;
     p->radius = 5;
@@ -160,7 +160,7 @@ void ProcessPTSpark(struct FWGLSimulation* simulation, int particle, float dSecs
     struct Particle* spark = &(simulation->particles[particle]);
 
     spark->acceleration[0] = -1.6f * spark->velocity[0];
-    spark->acceleration[1] = 60;
+    spark->acceleration[1] = -60;
 
     if (spark->timeSinceLastEmission > 0.1) {
         spark->timeSinceLastEmission = 0;

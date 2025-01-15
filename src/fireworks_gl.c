@@ -9,46 +9,52 @@
 #include "fireworks_gl_process.h"
 
 const char *vertexShaderSource =
-    " #version 330 core                                             \n"
-    " layout(location = 0) in vec3 aBasePos;                        \n"
-    " layout(location = 1) in vec3 aTranslate;                      \n"
-    " layout(location = 2) in vec4 aColour;                         \n"
-    " layout(location = 3) in float aRadius;                        \n"
-    " layout(location = 4) in float aRemainingLife;                 \n"
-    " layout(location = 5) in int aParticleType;                    \n"
-    " uniform vec2 dimensions;                                      \n"
-    " out vec4 vertexColour;                                        \n"
-    " out float remainingLife;                                      \n"
-    " flat out int particleType;                                    \n"
-    " void main()                                                   \n"
-    " {                                                             \n"
-    "    gl_Position = vec4(aBasePos*aRadius + aTranslate, 1.0f);   \n"
-    "    gl_Position.x /= (dimensions.x / 2);                       \n"
-    "    gl_Position.y /= (dimensions.y / 2);                       \n"
-    "    gl_Position += vec4(-1, -1, 0, 0);                         \n"
-    "    vertexColour = aColour;                                    \n"
-    "    remainingLife = aRemainingLife;                            \n"
-    "    particleType = aParticleType;                              \n"
-    " }                                                             \n"
+    "   #version 330 core                                               \n"
+    "   layout(location = 0) in vec3 aBasePos;                          \n"
+    "   layout(location = 1) in vec3 aTranslate;                        \n"
+    "   layout(location = 2) in vec4 aColour;                           \n"
+    "   layout(location = 3) in float aRadius;                          \n"
+    "   layout(location = 4) in float aRemainingLife;                   \n"
+    "   layout(location = 5) in int aParticleType;                      \n"
+    "                                                                   \n"
+    "   layout (std140) uniform WindowDimensions {                      \n"
+    "       int width;                                                  \n"
+    "       int height;                                                 \n"
+    "   };                                                              \n"
+    "                                                                   \n"
+    "   out vec4 vertexColour;                                          \n"
+    "   out float remainingLife;                                        \n"
+    "   flat out int particleType;                                      \n"
+    "                                                                   \n"
+    "   void main()                                                     \n"
+    "   {                                                               \n"
+    "       gl_Position = vec4(aBasePos*aRadius + aTranslate, 1.0f);    \n"
+    "       gl_Position.x /= (width / 2.0f);                            \n"
+    "       gl_Position.y /= (height / 2.0f);                           \n"
+    "       gl_Position += vec4(-1, -1, 0, 0);                          \n"
+    "       vertexColour = aColour;                                     \n"
+    "       remainingLife = aRemainingLife;                             \n"
+    "       particleType = aParticleType;                               \n"
+    "   }                                                               \n"
     "\0";
 
 const char *fragmentShaderSource =
-    " #version 330 core                                             \n"
-    " out vec4 FragColor;                                           \n"
-    " in vec4 vertexColour;                                         \n"
-    " in float remainingLife;                                       \n"
-    " flat in int particleType;                                     \n"
-    " void main() {                                                 \n"
-    "    FragColor = vec4(vertexColour);                            \n"
-    "    if (particleType == 0 && remainingLife < 0.5) {            \n"
-    "       float factor = 2 * remainingLife;                       \n"
-    "       FragColor.w = factor * factor;                          \n"
-    "    }                                                          \n"
-    "    if (particleType == 2) {                                   \n"
-    "       float factor = remainingLife / 3;                       \n"
-    "       FragColor.w = 0.5 * factor * factor;                    \n"
-    "    }                                                          \n"
-    " }                                                             \n"
+    "   #version 330 core                                               \n"
+    "   out vec4 FragColor;                                             \n"
+    "   in vec4 vertexColour;                                           \n"
+    "   in float remainingLife;                                         \n"
+    "   flat in int particleType;                                       \n"
+    "   void main() {                                                   \n"
+    "       FragColor = vec4(vertexColour);                             \n"
+    "       if (particleType == 0 && remainingLife < 0.5) {             \n"
+    "           float factor = 2 * remainingLife;                       \n"
+    "           FragColor.w = factor * factor;                          \n"
+    "       }                                                           \n"
+    "       if (particleType == 2) {                                    \n"
+    "           float factor = remainingLife / 3;                       \n"
+    "           FragColor.w = 0.5 * factor * factor;                    \n"
+    "       }                                                           \n"
+    "   }                                                               \n"
     "\0";
 
 const float circleVertices[] = {
@@ -379,16 +385,16 @@ void FWGL_prepareBuffers(struct FWGL *fwgl) {
 
   glBindVertexArray(VAO);
   glBindBuffer(GL_ARRAY_BUFFER, vertexVBO);
-  glBufferData(GL_ARRAY_BUFFER, sizeof(circleVertices), circleVertices,
-               GL_STATIC_DRAW);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(circleVertices), circleVertices, GL_STATIC_DRAW);
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-  glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(circleIndices), circleIndices,
-               GL_STATIC_DRAW);
+  glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(circleIndices), circleIndices, GL_STATIC_DRAW);
 
   // 2*i Dimensions (w,h)
   glGenBuffers(1, &dimensionUBO);
   glBindBuffer(GL_UNIFORM_BUFFER, dimensionUBO);
   glBindBufferBase(GL_UNIFORM_BUFFER, 0, dimensionUBO);
+  int defaultDimensions[4] = { 100, 100, 0, 0 }; // Pad to 16 bytes for std140
+  glBufferData(GL_UNIFORM_BUFFER, sizeof(defaultDimensions), defaultDimensions, GL_STATIC_DRAW);
 
   // Vertex attributes
   // Vertex base position (x,y,z)
@@ -397,27 +403,19 @@ void FWGL_prepareBuffers(struct FWGL *fwgl) {
   // Translate (x,y,z)
   glBindBuffer(GL_ARRAY_BUFFER, dataVBO);
   glEnableVertexAttribArray(1);
-  glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE,
-                        sizeof(struct ParticleRenderData), (void *)0);
+  glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(struct ParticleRenderData), (void *)0);
   // Colour (r,g,b,a)
   glEnableVertexAttribArray(2);
-  glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE,
-                        sizeof(struct ParticleRenderData),
-                        (void *)(3 * sizeof(float)));
+  glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(struct ParticleRenderData), (void *)(3 * sizeof(float)));
   // Radius (r)
   glEnableVertexAttribArray(3);
-  glVertexAttribPointer(3, 1, GL_FLOAT, GL_FALSE,
-                        sizeof(struct ParticleRenderData),
-                        (void *)(7 * sizeof(float)));
+  glVertexAttribPointer(3, 1, GL_FLOAT, GL_FALSE, sizeof(struct ParticleRenderData), (void *)(7 * sizeof(float)));
   // Remaining Life (l)
   glEnableVertexAttribArray(4);
-  glVertexAttribPointer(4, 1, GL_FLOAT, GL_FALSE,
-                        sizeof(struct ParticleRenderData),
-                        (void *)(8 * sizeof(float)));
+  glVertexAttribPointer(4, 1, GL_FLOAT, GL_FALSE, sizeof(struct ParticleRenderData), (void *)(8 * sizeof(float)));
   // Particle Type (t)
   glEnableVertexAttribArray(5);
-  glVertexAttribIPointer(5, 1, GL_INT, sizeof(struct ParticleRenderData),
-                         (void *)(9 * sizeof(float)));
+  glVertexAttribIPointer(5, 1, GL_INT, sizeof(struct ParticleRenderData), (void *)(9 * sizeof(float)));
 
   glBindBuffer(GL_ARRAY_BUFFER, 0);
   glVertexAttribDivisor(1, 1); // Stride of 1 between swapping attributes
@@ -429,6 +427,7 @@ void FWGL_prepareBuffers(struct FWGL *fwgl) {
   glBindVertexArray(0);
 
   fwgl->VAO = VAO;
+  fwgl->dimensionUBO = dimensionUBO;
   fwgl->vertexVBO = vertexVBO;
   fwgl->dataVBO = dataVBO;
   fwgl->EBO = EBO;
@@ -438,12 +437,11 @@ void FWGL_render(struct FWGL *fwgl) {
 
   struct FWGLSimulation *simulation = &(fwgl->simulation);
   struct Particle *p;
-  int ptr = 0;
 
   int renderParticles = 0;
 
-  for (int i = 0; i < simulation->maxParticles; i++) {
-    p = &(simulation->particles[i]);
+  for (int pId = 0; pId < simulation->maxParticles; pId++) {
+    p = &(simulation->particles[pId]);
     if (!p->isAlive) {
       continue;
     }
@@ -466,22 +464,19 @@ void FWGL_render(struct FWGL *fwgl) {
     // Particle Type (t)
     data.particleType = p->type;
 
-    fwgl->renderData[ptr] = data;
+    fwgl->renderData[pId] = data;
   }
 
-  int dimensions[2] = {100, 100};
+  // Need to pad it to 16 bytes for std140 layout
+  int dimensions[4] = { 200, 200, 0, 0 };
   glfwGetWindowSize(fwgl->window, &(dimensions[0]), &(dimensions[1]));
   glBindBuffer(GL_UNIFORM_BUFFER, fwgl->dimensionUBO);
-  glBufferData(GL_UNIFORM_BUFFER, sizeof(dimensions), dimensions,
-               GL_STATIC_DRAW);
+  glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(dimensions), &dimensions);
+  glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
   glClearColor(0, 0, 0, 1);
   glClear(GL_COLOR_BUFFER_BIT);
 
-  // THE ERROR IS IN HERE!!!
-  // WHEN RENDERPARTICLES == 0, there is no error!!
-  // nvoglv64 is in the Nvidia driver, so I'm probably accessing memory I'm not
-  // allowed to!
   if (renderParticles > 0) {
     int bufferSize = sizeof(struct ParticleRenderData) * renderParticles;
     glBindBuffer(GL_ARRAY_BUFFER, fwgl->dataVBO);
@@ -492,6 +487,6 @@ void FWGL_render(struct FWGL *fwgl) {
 
     glUseProgram(fwgl->shaderProgram);
     glBindVertexArray(fwgl->VAO);
-    glDrawElementsInstanced(GL_TRIANGLES, indexCount, GL_UNSIGNED_INT, 0, 4);
+    glDrawElementsInstanced(GL_TRIANGLES, indexCount, GL_UNSIGNED_INT, 0, renderParticles);
   }
 }
