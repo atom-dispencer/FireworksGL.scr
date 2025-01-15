@@ -111,7 +111,9 @@ int main(int argc, char *argv[]) {
   }
 
   // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-  glfwSwapInterval(0);
+  // glfwSwapInterval(0);  // 0 for vsync off
+  glEnable(GL_BLEND);
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
   FWGL_prepareBuffers(fwgl);
 
   // Set up timing
@@ -126,22 +128,20 @@ int main(int argc, char *argv[]) {
   long long dNanos;
   float dSecs;
 
-  int i = 0;
   while (!glfwWindowShouldClose(fwgl->window)) {
     timespec_get(&ts, TIME_UTC);
     thisEpochNano = (long long)(ts.tv_sec * 1e9 + ts.tv_nsec);
     dNanos = thisEpochNano - lastEpochNano;
     dSecs = (float)(dNanos / 1e9);
     lastEpochNano = thisEpochNano;
-    printf("\n%.6fs\n%ffps\n", dSecs, 1 / dSecs);
+
+    //printf("\n%.6fs\n%ffps\n", dSecs, 1 / dSecs);
 
     FWGL_process(fwgl, dSecs);
     FWGL_render(fwgl);
 
     glfwSwapBuffers(fwgl->window);
     glfwPollEvents();
-
-    printf("%d\n", i++);
   }
   printf("Shutting down...\n");
 

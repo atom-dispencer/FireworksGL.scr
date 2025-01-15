@@ -66,6 +66,7 @@ int ReviveDeadParticle(struct FWGLSimulation* simulation) {
     }
 
     // I hope this never happens
+    print("Particle overflow!\n");
     return RandIntRange(0, simulation->maxParticles);
 }
 
