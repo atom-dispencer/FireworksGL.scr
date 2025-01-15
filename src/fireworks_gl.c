@@ -17,9 +17,11 @@ SHADER(     layout(location = 1) in vec3 aTranslate;                        )
 SHADER(     layout(location = 2) in vec4 aColour;                           )
 SHADER(     layout(location = 3) in float aRadius;                          )
 SHADER(     layout(location = 4) in float aRemainingLife;                   )
+SHADER(     layout(location = 5) in int aParticleType;                      )
 SHADER(     uniform in vec2 dimensions;                                     )
 SHADER(     out vec4 vertexColour;                                          )
 SHADER(     out float remainingLife;                                        )
+SHADER(     flat out int particleType;                                      )
 SHADER(     void main()                                                     )
 SHADER(     {                                                               )
 SHADER(     \t gl_Position = vec4(aBasePos*aRadius + aTranslate, 1.0f);     )
@@ -28,6 +30,7 @@ SHADER(     \t gl_Position.y /= (dimensions.y / 2);                         )
 SHADER(     \t gl_Position += vec4(-1, -1, 0, 0);                           )
 SHADER(     \t vertexColour = aColour;                                      )
 SHADER(     \t remainingLife = aRemainingLife;                              )
+SHADER(     \t particleType = aParticleType;                                )
 SHADER(     }                                                               )"\0";
 
 
@@ -36,19 +39,19 @@ SHADER(     #version 330 core                                       )
 SHADER(     out vec4 FragColor;                                     )
 SHADER(     in vec4 vertexColour;                                   )
 SHADER(     in float remainingLife;                                 )
-SHADER(     in int particleType;                                    )
+SHADER(     flat in int particleType;                               )
 SHADER(     void main()                                             )
 SHADER(     {                                                       )
+SHADER(     \t FragColor = vec4(vertexColour);                      )
 SHADER(     \t if (particleType == 0 && remainingLife < 0.5) {      )
 SHADER(     \t \t float factor = 2 * remainingLife;                 )
-SHADER(     \t \t vertexColour.w = factor * factor                  )
+SHADER(     \t \t FragColor.w = factor * factor;                    )
 SHADER(     \t }                                                    )
-SHADER(     \t if (particleType == 2 && remainingLife < 0.5) {      )
+SHADER(     \t if (particleType == 2) {                             )
 SHADER(     \t \t float factor = remainingLife / 3;                 )
-SHADER(     \t \t vertexColour.w = 0.5 * factor * factor            )
+SHADER(     \t \t FragColor.w = 0.5 * factor * factor;              )
 SHADER(     \t }                                                    )
-SHADER(     \t FragColor = vec4(vertexColour);                      )
-SHADER(     };                                                      )"\0";
+SHADER(     }                                                       )"\0";
 
 
 const float circleVertices[] = {
@@ -137,13 +140,13 @@ int main(int argc, char *argv[])
     thisEpochNano = lastEpochNano + 1;
 
     long long dNanos;
-    double dSecs;
+    float dSecs;
 
     while (!glfwWindowShouldClose(fwgl->window)) {
         timespec_get(&ts, TIME_UTC);
         thisEpochNano = (long long)(ts.tv_sec * 1e9 + ts.tv_nsec);
         dNanos = thisEpochNano - lastEpochNano;
-        dSecs = dNanos / 1e9;
+        dSecs = (float) (dNanos / 1e9);
         lastEpochNano = thisEpochNano;
         printf("\n%.6fs\n%ffps\n", dSecs, 1 / dSecs);
 
@@ -193,15 +196,16 @@ enum FWGL_Error FWGL_DeInit(struct FWGL* fwgl) {
 
 void FWGL_parseArgs(struct FWGL* fwgl, int argc, char* argv[]) {
     if (argc < 2) {
+        printf("Not enough arguments!\n");
         fwgl->error = FWGL_ERROR_INIT_ARGCOUNT;
         return;
     }
 
     if (strcmp(argv[1], "/s") == 0) {
-        fwgl->is_preview = FALSE;
+        fwgl->is_preview = 0;
     }
     else if (strcmp(argv[1], "/p") == 0) {
-        fwgl->is_preview = TRUE;
+        fwgl->is_preview = 1;
     }
     else {
         printf("Unrecognised argument: %s\n", argv[1]);
@@ -265,13 +269,13 @@ void FWGL_framebufferSizeCallback(GLFWwindow* window, int width, int height) {
     glViewport(0, 0, width, height);
 }
 
-void FWGL_process(struct FWGL* fwgl, double dSecs) {
+void FWGL_process(struct FWGL* fwgl, float dSecs) {
     if (GLFW_PRESS == glfwGetKey(fwgl->window, GLFW_KEY_SPACE)
             || GLFW_PRESS == glfwGetKey(fwgl->window, GLFW_KEY_ENTER)
             || GLFW_PRESS == glfwGetMouseButton(fwgl->window, GLFW_MOUSE_BUTTON_LEFT)
         ) {
         printf("Input detected! Triggering close...\n");
-        glfwSetWindowShouldClose(fwgl->window, TRUE);
+        glfwSetWindowShouldClose(fwgl->window, GLFW_TRUE);
     }
 
     int width;

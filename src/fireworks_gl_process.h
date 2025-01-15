@@ -28,10 +28,10 @@ struct FWGLSimulation {
     float timeSinceRocketCount;
 };
 
-float* RandomBrightColour();
+void RandomBrightColour(float rgba[4]);
 int RandIntRange(int lower, int upper);
-void MoveParticles(struct FWGLSimulation* simulation, int width, int height, double dSecs);
-void DeleteParticle(struct FWGLSimulation* simulation, struct Particle* p);
+void MoveParticles(struct FWGLSimulation* simulation, int width, int height, float dSecs);
+void DeleteParticle(struct FWGLSimulation* simulation, int particle);
 
 void MakePTSpark(struct FWGLSimulation* simulation, int particle);
 void MakePTSparkRocket(struct FWGLSimulation* simulation, int particle);
