@@ -98,7 +98,7 @@ int main(int argc, char *argv[])
 
     struct FWGL* fwgl = malloc(sizeof(struct FWGL));
 
-    FWGL_parseArgs(&fwgl, argc, argv);
+    FWGL_parseArgs(fwgl, argc, argv);
     if (fwgl->error != FWGL_OK) {
         printf("Error parsing arguments: %d\n", fwgl->error);
         return fwgl->error;
@@ -109,14 +109,14 @@ int main(int argc, char *argv[])
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-    FWGL_createGLFWWindow(&fwgl);
+    FWGL_createGLFWWindow(fwgl);
     if (fwgl->error != FWGL_OK) {
         printf("Error creating GLFW window: %d\n", fwgl->error);
         glfwTerminate();
         return fwgl->error;
     }
 
-    FWGL_compileShaders(&fwgl);
+    FWGL_compileShaders(fwgl);
     if (fwgl->error != FWGL_OK) {
         printf("Failed to set up rendering infrastructure!");
         glfwTerminate();
@@ -125,7 +125,7 @@ int main(int argc, char *argv[])
 
     //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     glfwSwapInterval(0);
-    FWGL_prepareBuffers(&fwgl);
+    FWGL_prepareBuffers(fwgl);
 
     // Set up timing
     long long lastEpochNano = 0;
@@ -133,7 +133,7 @@ int main(int argc, char *argv[])
     struct timespec ts;
 
     timespec_get(&ts, TIME_UTC);
-    lastEpochNano = ts.tv_sec * 1e9 + ts.tv_nsec;
+    lastEpochNano = (long long)(ts.tv_sec * 1e9 + ts.tv_nsec);
     thisEpochNano = lastEpochNano + 1;
 
     long long dNanos;
@@ -141,14 +141,14 @@ int main(int argc, char *argv[])
 
     while (!glfwWindowShouldClose(fwgl->window)) {
         timespec_get(&ts, TIME_UTC);
-        thisEpochNano = ts.tv_sec * 1e9 + ts.tv_nsec;
+        thisEpochNano = (long long)(ts.tv_sec * 1e9 + ts.tv_nsec);
         dNanos = thisEpochNano - lastEpochNano;
         dSecs = dNanos / 1e9;
         lastEpochNano = thisEpochNano;
         printf("\n%.6fs\n%ffps\n", dSecs, 1 / dSecs);
 
-        FWGL_process(&fwgl, dSecs);
-        FWGL_render(&fwgl);
+        FWGL_process(fwgl, dSecs);
+        FWGL_render(fwgl);
 
         glfwSwapBuffers(fwgl->window);
         glfwPollEvents();
@@ -399,8 +399,6 @@ void FWGL_prepareBuffers(struct FWGL* fwgl) {
 void FWGL_render(struct FWGL* fwgl) {
 
     struct FWGLSimulation* simulation = &(fwgl->simulation);
-
-    struct Particle* particles;
     struct Particle* p;
     int ptr = 0;
 

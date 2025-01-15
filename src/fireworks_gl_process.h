@@ -11,9 +11,9 @@ struct Particle {
     float velocity[3];
     float acceleration[3];
     enum ParticleType type;
-    uint8_t isAlive;
+    int isAlive;
     float remainingLife;
-    int radius;
+    float radius;
     float colour[4];
     int children;
     float timeSinceLastEmission;
@@ -24,7 +24,7 @@ struct FWGLSimulation {
     int liveParticles;
     int maxRockets;
     int liveRockets;
-    struct Particle** particles;
+    struct Particle* particles;
     float timeSinceRocketCount;
 };
 

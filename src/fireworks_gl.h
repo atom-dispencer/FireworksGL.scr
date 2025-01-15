@@ -1,3 +1,4 @@
+#pragma once
 #include "fireworks_gl_process.h"
 
 typedef uint8_t BOOL;
