@@ -83,7 +83,7 @@ int main(int argc, char *argv[]) {
   printf("FireworksGL!\n");
 
   struct FWGL *fwgl = malloc(sizeof(struct FWGL));
-  FWGL_Init(fwgl, 100, 1);
+  FWGL_Init(fwgl, 250, 1);
 
   FWGL_parseArgs(fwgl, argc, argv);
   if (fwgl->error != FWGL_OK) {
@@ -143,30 +143,46 @@ int main(int argc, char *argv[]) {
     glfwSwapBuffers(fwgl->window);
     glfwPollEvents();
   }
-  printf("Shutting down...\n");
+  printf("Shutting down gracefully...\n");
 
-  glDeleteVertexArrays(1, &(fwgl->VAO));
-  glDeleteBuffers(1, &(fwgl->vertexVBO));
-  glDeleteBuffers(1, &(fwgl->EBO));
-  glDeleteProgram(fwgl->shaderProgram);
+  enum FWGL_Error error = FWGL_DeInit(fwgl);
+  if (error != FWGL_OK) {
+      printf("Error deinitialising FWGL: %d\n", error);
+  }
 
+  printf("Terminating GLFW\n");
   glfwTerminate();
+
+  printf("Shutdown OK\n");
   return FWGL_OK;
 }
 
 enum FWGL_Error FWGL_Init(struct FWGL *fwgl, int maxParticles, int maxRockets) {
-  fwgl->error = FWGL_ERROR_INIT;
-  fwgl->is_preview = 0;
-  fwgl->window, fwgl->shaderProgram, fwgl->VAO, fwgl->vertexVBO, fwgl->dataVBO,
-      fwgl->EBO = -1;
-  fwgl->renderData = malloc(sizeof(struct ParticleRenderData) * maxParticles);
+    printf("Initialising new FWGL with maxParticles=%d, maxRockets=%d\n", maxParticles, maxRockets);
+    fwgl->error = FWGL_ERROR_INIT;
+
+    struct timespec ts;
+    timespec_get(&ts, TIME_UTC);
+    srand(ts.tv_nsec);
+    printf("Random seed is %ld\n", ts.tv_nsec);
+
+
+    int renderDataAllocation = sizeof(struct ParticleRenderData) * maxParticles;
+    int particlesAllocation = sizeof(struct Particle) * maxParticles;
+    printf("renderData will be allocated %d bytes\n", renderDataAllocation);
+    printf("particles will be allocated %d bytes\n", renderDataAllocation);
+
+    fwgl->is_preview = 0;
+    fwgl->window, fwgl->shaderProgram, fwgl->VAO, fwgl->vertexVBO, fwgl->dataVBO,
+    fwgl->EBO = -1;
+    fwgl->renderData = malloc(renderDataAllocation);
 
   struct FWGLSimulation simulation;
   simulation.maxParticles = maxParticles;
   simulation.liveParticles = 0;
   simulation.maxRockets = maxRockets;
   simulation.liveRockets = 0;
-  simulation.particles = malloc(sizeof(struct Particle) * maxParticles);
+  simulation.particles = malloc(particlesAllocation);
   simulation.timeSinceRocketCount = 0;
   fwgl->simulation = simulation;
 
@@ -216,11 +232,21 @@ enum FWGL_Error FWGL_Init(struct FWGL *fwgl, int maxParticles, int maxRockets) {
 }
 
 enum FWGL_Error FWGL_DeInit(struct FWGL *fwgl) {
-  free(fwgl->renderData);
-  free(fwgl->simulation.particles);
-  free(fwgl);
+    printf("Deinitialising FWGL: ");
 
-  return FWGL_OK;
+    printf("Deleting OpenGL resources...  ");
+    glDeleteVertexArrays(1, &(fwgl->VAO));
+    glDeleteBuffers(1, &(fwgl->vertexVBO));
+    glDeleteBuffers(1, &(fwgl->EBO));
+    glDeleteProgram(fwgl->shaderProgram);
+
+    printf("Freeing memory...  ");
+    free(fwgl->renderData);
+    free(fwgl->simulation.particles);
+    free(fwgl);
+
+    printf("FWGL_DeInit OK\n");
+    return FWGL_OK;
 }
 
 void FWGL_parseArgs(struct FWGL *fwgl, int argc, char *argv[]) {

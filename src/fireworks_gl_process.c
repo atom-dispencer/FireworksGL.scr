@@ -72,13 +72,15 @@ int ReviveDeadParticle(struct FWGLSimulation* simulation) {
         struct Particle* c = &(simulation->particles[i]);
         if (c->type == PT_HAZE) {
             // Don't increment because we're just reassigning
+            printf("No dead particles to revive, reallocating haze particle %d (you should increase FWGL_Init maxParticles)\n", i);
             return i;
         }
     }
 
     // I hope this never happens
-    printf("Particle overflow!\n");
-    return RandIntRange(0, simulation->maxParticles);
+    int x = RandIntRange(0, simulation->maxParticles);
+    printf("Particle overflow! No dead and no haze, so reallocating whatever %d is!\n", x);
+    return x;
 }
 
 void MakePTSparkRocket(struct FWGLSimulation* simulation, int particle) {
@@ -197,10 +199,6 @@ void ProcessPTSpark(struct FWGLSimulation* simulation, int particle, float dSecs
 void ProcessPTHaze(struct FWGLSimulation* simulation, int particle, float dSecs) {
     // No processing required
     // Haze doesn't move and fading/alpha is handled by the fragment shader
-    struct Particle* p = &(simulation->particles[particle]);
-    if (p->velocity[1] == 0) {
-        printf("%d isn't moving\n", particle);
-    }
 }
 
 void KillPTSpark(struct FWGLSimulation* simulation, int particle) {
@@ -209,8 +207,6 @@ void KillPTSpark(struct FWGLSimulation* simulation, int particle) {
 
 void KillPTSparkRocket(struct FWGLSimulation* simulation, int particle) {
     struct Particle* rocket = &(simulation->particles[particle]);
-
-    return;
 
     float xTotal = 0;
     float yTotal = 0;
@@ -318,11 +314,6 @@ void MoveParticles(struct FWGLSimulation* simulation, int width, int height, flo
             || p->position[0] > width - 50
             || p->position[1] < +50
             || p->position[1] > height - 50) {
-            printf("%d is out of bounds! (%f,%f @ %f,%f c %f,%f,%f,%f)\n", pId, 
-                p->position[0], p->position[1],
-                p->velocity[0], p->velocity[1],
-                p->colour[0], p->colour[1], p->colour[2], p->colour[3]
-            );
             DeleteParticle(simulation, pId);
         }
 
