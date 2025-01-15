@@ -144,8 +144,6 @@ void ProcessPTSparkRocket(struct FWGLSimulation* simulation, int particle, float
 
     rocket->velocity[0] += RandIntRange(-30, 30) / 10.0f;
 
-    return;
-
     if (rocket->timeSinceLastEmission > 0.05f) {
         rocket->timeSinceLastEmission = 0;
 
@@ -199,6 +197,10 @@ void ProcessPTSpark(struct FWGLSimulation* simulation, int particle, float dSecs
 void ProcessPTHaze(struct FWGLSimulation* simulation, int particle, float dSecs) {
     // No processing required
     // Haze doesn't move and fading/alpha is handled by the fragment shader
+    struct Particle* p = &(simulation->particles[particle]);
+    if (p->velocity[1] == 0) {
+        printf("%d isn't moving\n", particle);
+    }
 }
 
 void KillPTSpark(struct FWGLSimulation* simulation, int particle) {
@@ -288,22 +290,8 @@ void MoveParticles(struct FWGLSimulation* simulation, int width, int height, flo
     for (int pId = 0; pId < simulation->maxParticles; pId++) {
         struct Particle* p = &(simulation->particles[pId]);
 
-        // Skip dead particles
+        // Skip already dead particles
         if (!p->isAlive) {
-            continue;
-        }
-
-        // Make particles older
-        p->remainingLife -= dSecs;
-        
-        // Kill out of bounds particles
-        // TODO Invert bounds again
-        if (p->position[0] < +50 
-            || p->position[0] > width - 50
-            || p->position[1] < +50
-            || p->position[1] > height - 50) {
-            printf("%d is out of bounds!\n", pId);
-            DeleteParticle(simulation, pId);
             continue;
         }
 
@@ -321,10 +309,30 @@ void MoveParticles(struct FWGLSimulation* simulation, int width, int height, flo
                 break;
             }
 
-            printf("%d is old\n", pId);
             DeleteParticle(simulation, pId);
+        }
+
+        // Kill out of bounds particles
+        // TODO Invert bounds again
+        if (p->position[0] < +50
+            || p->position[0] > width - 50
+            || p->position[1] < +50
+            || p->position[1] > height - 50) {
+            printf("%d is out of bounds! (%f,%f @ %f,%f c %f,%f,%f,%f)\n", pId, 
+                p->position[0], p->position[1],
+                p->velocity[0], p->velocity[1],
+                p->colour[0], p->colour[1], p->colour[2], p->colour[3]
+            );
+            DeleteParticle(simulation, pId);
+        }
+
+        // Skip newly dead particles
+        if (!p->isAlive) {
             continue;
         }
+
+        // Make particles older
+        p->remainingLife -= dSecs;
 
         // Process different types of particle
         switch (p->type) {

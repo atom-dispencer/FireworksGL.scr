@@ -439,15 +439,11 @@ void FWGL_render(struct FWGL *fwgl) {
   struct Particle *p;
 
   int renderParticles = 0;
-  
-  printf("live:%d\n", simulation->liveParticles);
-
   for (int pId = 0; pId < simulation->maxParticles; pId++) {
     p = &(simulation->particles[pId]);
     if (!p->isAlive) {
       continue;
     }
-    renderParticles++;
 
     struct ParticleRenderData data;
     // Translate (x,y,z)
@@ -466,7 +462,8 @@ void FWGL_render(struct FWGL *fwgl) {
     // Particle Type (t)
     data.particleType = p->type;
 
-    fwgl->renderData[pId] = data;
+    fwgl->renderData[renderParticles] = data;
+    renderParticles++;
   }
 
   // Need to pad it to 16 bytes for std140 layout
