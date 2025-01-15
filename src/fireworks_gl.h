@@ -1,8 +1,6 @@
 #pragma once
 #include "fireworks_gl_process.h"
 
-#define SHADER(txt) #txt "\n"
-
 enum FWGL_Error {
 	FWGL_OK								=   0,
 	FWGL_ERROR_INIT						= 100,
@@ -29,7 +27,7 @@ struct FWGL {
 	GLFWwindow* window;
 
 	unsigned int shaderProgram;
-	unsigned int VAO, vertexVBO, dataVBO, EBO;
+	unsigned int dimensionUBO, VAO, vertexVBO, dataVBO, EBO;
 	struct FWGLSimulation simulation;
 	struct ParticleRenderData* renderData;
 };
