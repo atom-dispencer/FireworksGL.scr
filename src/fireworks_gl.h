@@ -2,15 +2,17 @@
 #include "fireworks_gl_process.h"
 
 enum FWGL_Error {
-	FWGL_OK								=   0,
-	FWGL_ERROR_INIT						= 100,
-	FWGL_ERROR_INIT_ARGCOUNT			= 101,
-	FWGL_ERROR_INIT_GLFWWINDOW			= 102,
-	FWGL_ERROR_INIT_UNKNOWNARG			= 103,
-	FWGL_ERROR_INIT_GLAD				= 104,
-	FWGL_ERROR_INIT_COMPILEVERTEX		= 105,
-	FWGL_ERROR_INIT_COMPILEFRAGMENT		= 106,
-	FWGL_ERROR_INIT_SHADERLINK			= 107,
+	FWGL_OK										=   0,
+	FWGL_ERROR_INIT								= 100,
+	FWGL_ERROR_INIT_ARGCOUNT					= 101,
+	FWGL_ERROR_INIT_GLFWWINDOW					= 102,
+	FWGL_ERROR_INIT_UNKNOWNARG					= 103,
+	FWGL_ERROR_INIT_GLAD						= 104,
+	FWGL_ERROR_INIT_COMPILEVERTEX				= 105,
+	FWGL_ERROR_INIT_COMPILEFRAGMENT				= 106,
+	FWGL_ERROR_INIT_SHADERLINK					= 107,
+	FWGL_ERROR_PREPBUFFER_FRAME_RENDER			= 200,
+	FWGL_ERROR_PREPBUFFER_FRAME_EFFECT			= 201,
 };
 
 struct ParticleRenderData {
@@ -27,7 +29,7 @@ struct FWGL {
 	GLFWwindow* window;
 
 	unsigned int shaderProgram;
-	unsigned int dimensionUBO, VAO, vertexVBO, dataVBO, EBO;
+	unsigned int vfxFBO, dimensionUBO, VAO, vertexVBO, dataVBO, EBO;
 	struct FWGLSimulation simulation;
 	struct ParticleRenderData* renderData;
 };

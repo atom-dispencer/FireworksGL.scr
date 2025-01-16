@@ -105,7 +105,7 @@ int main(int argc, char *argv[]) {
 
   FWGL_compileShaders(fwgl);
   if (fwgl->error != FWGL_OK) {
-    printf("Failed to set up rendering infrastructure!");
+    printf("Failed to set up rendering infrastructure!\n");
     glfwTerminate();
     return fwgl->error;
   }
@@ -115,6 +115,11 @@ int main(int argc, char *argv[]) {
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
   FWGL_prepareBuffers(fwgl);
+  if (fwgl->error != FWGL_OK) {
+      printf("Error preparing OpenGL buffers: %d\n", fwgl->error);
+      glfwTerminate();
+      return fwgl->error;
+  }
 
   // Set up timing
   long long lastEpochNano = 0;
@@ -239,6 +244,7 @@ enum FWGL_Error FWGL_DeInit(struct FWGL *fwgl) {
     glDeleteBuffers(1, &(fwgl->vertexVBO));
     glDeleteBuffers(1, &(fwgl->EBO));
     glDeleteProgram(fwgl->shaderProgram);
+    glDeleteFramebuffers(1, &(fwgl->vfxFBO));
 
     printf("Freeing memory...  ");
     free(fwgl->renderData);
@@ -275,6 +281,9 @@ void FWGL_createGLFWWindow(struct FWGL *fwgl) {
   GLFWwindow *window = NULL;
   int width = 0;
   int height = 0;
+  
+  // It's a screensaver, it shouldn't change size
+  glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
 
   if (fwgl->is_preview) {
     printf("Creating preview window\n");
@@ -380,22 +389,30 @@ void FWGL_compileShaders(struct FWGL *fwgl) {
 }
 
 void FWGL_prepareBuffers(struct FWGL *fwgl) {
-  unsigned int dimensionUBO, dataVBO, VAO, vertexVBO, EBO;
+  // Handles which will be stored in FWGL
+  unsigned int vfxFBO, dimensionUBO, dataVBO, VAO, vertexVBO, EBO;
 
-  // float data[] = {
-  //     // Translate x,y,z      // Colour r,g,b,a           // Radius     // RL
-  //     // PT
-  //      0.5f,  0.5f,  0.0f,    1.0f, 0.0f, 0.0f, 1.0f,     0.5f,         1.0f,
-  //      2,
-  //     -0.5f,  0.5f,  0.0f,    0.0f, 1.0f, 0.0f, 1.0f,     0.4f,         0.5f,
-  //     2, -0.5f, -0.5f,  0.0f,    0.0f,  0.0f, 1.0f, 1.0f,    0.3f, 0.3f,   2,
-  //      0.5f, -0.5f,  0.0f,    1.0f,  1.0f, 0.0f, 1.0f,    0.2f,         0.1f,
-  //      2,
-  // };
-  // glGenBuffers(1, &dataVBO);
-  // glBindBuffer(GL_ARRAY_BUFFER, dataVBO);
-  // glBufferData(GL_ARRAY_BUFFER, sizeof(data), &data, GL_STATIC_DRAW);
-  // glBindBuffer(GL_ARRAY_BUFFER, 0);
+  int width, height;
+  glfwGetWindowSize(fwgl->window, &width, &height);
+
+  // Visual Effects Texture
+  unsigned int vfxTexture;
+  glGenTextures(1, &vfxTexture);
+  glBindTexture(GL_TEXTURE_2D, vfxTexture);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  // Visual Effects Framebuffer
+  glGenFramebuffers(1, &vfxFBO);
+  glBindFramebuffer(GL_FRAMEBUFFER, vfxFBO);
+  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, vfxTexture, 0);
+  GLenum fbStatus = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+  if (GL_FRAMEBUFFER_COMPLETE != fbStatus) {
+      printf("Erronious framebuffer status: %d\n", fbStatus);
+      fwgl->error = FWGL_ERROR_PREPBUFFER_FRAME_RENDER;
+      return;
+  }
+  glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
   // 3*f Translate (x,y,z)
   // 4*f Colour (r,g,b,a)
@@ -452,11 +469,14 @@ void FWGL_prepareBuffers(struct FWGL *fwgl) {
 
   glBindVertexArray(0);
 
+  fwgl->vfxFBO = vfxFBO;
   fwgl->VAO = VAO;
   fwgl->dimensionUBO = dimensionUBO;
   fwgl->vertexVBO = vertexVBO;
   fwgl->dataVBO = dataVBO;
   fwgl->EBO = EBO;
+
+  fwgl->error = FWGL_OK;
 }
 
 void FWGL_render(struct FWGL *fwgl) {
