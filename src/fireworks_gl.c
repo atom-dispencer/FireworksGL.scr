@@ -349,6 +349,20 @@ void FWGL_compileShader(unsigned int* program, const char* vertexSource, const c
     printf("Successfully compiled and linked shader program!\n");
 }
 
+void FWGL_makeTexture(unsigned int* texture, int width, int height) {
+
+    unsigned int handle;
+    glGenTextures(1, &handle);
+    glBindTexture(GL_TEXTURE_2D, handle);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+    *texture = handle;
+}
+
 void FWGL_prepareBuffers(struct FWGL *fwgl) {
   // Handles
   // Basic output of the particle geometry (semi-transparent circles on a black background)
@@ -370,13 +384,7 @@ void FWGL_prepareBuffers(struct FWGL *fwgl) {
   // Visual Effects
   //
   // Texture
-  glGenTextures(1, &geometryTexture);
-  glBindTexture(GL_TEXTURE_2D, geometryTexture);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+  FWGL_makeTexture(&geometryTexture, width, height);
   // Framebuffer
   glGenFramebuffers(1, &geometryFBO);
   glBindFramebuffer(GL_FRAMEBUFFER, geometryFBO);
