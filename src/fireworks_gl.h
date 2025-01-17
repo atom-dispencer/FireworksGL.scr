@@ -29,10 +29,11 @@ struct FWGL {
 	GLFWwindow* window;
 
 	// Basic circle geometry
+	unsigned int dimensionUBO, circleVAO, circleVBO, circleEBO, dataVBO;
 	unsigned int geometryFBO, geometryTexture, geometryShader;
+	// For finally showing on the screen
+	unsigned int screenShader, screenVAO;
 
-	unsigned int quadShaderProgram;
-	unsigned int quadVAO, dimensionUBO, VAO, vertexVBO, dataVBO, EBO;
 	struct FWGLSimulation simulation;
 	struct ParticleRenderData* renderData;
 };

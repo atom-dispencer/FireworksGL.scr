@@ -219,8 +219,8 @@ enum FWGL_Error FWGL_Init(struct FWGL *fwgl, int maxParticles, int maxRockets) {
     printf("particles will be allocated %d bytes\n", renderDataAllocation);
 
     fwgl->is_preview = 0;
-    fwgl->window, fwgl->geometryShader, fwgl->VAO, fwgl->vertexVBO, fwgl->dataVBO,
-    fwgl->EBO = -1;
+    fwgl->window, fwgl->geometryShader, fwgl->circleVAO, fwgl->circleVBO, fwgl->dataVBO,
+    fwgl->circleEBO = -1;
     fwgl->renderData = malloc(renderDataAllocation);
 
   struct FWGLSimulation simulation;
@@ -281,9 +281,9 @@ enum FWGL_Error FWGL_DeInit(struct FWGL *fwgl) {
     printf("Deinitialising FWGL: ");
 
     printf("Deleting OpenGL resources...  ");
-    glDeleteVertexArrays(1, &(fwgl->VAO));
-    glDeleteBuffers(1, &(fwgl->vertexVBO));
-    glDeleteBuffers(1, &(fwgl->EBO));
+    glDeleteVertexArrays(1, &(fwgl->circleVAO));
+    glDeleteBuffers(1, &(fwgl->circleVBO));
+    glDeleteBuffers(1, &(fwgl->circleEBO));
     glDeleteProgram(fwgl->geometryShader);
     glDeleteFramebuffers(1, &(fwgl->geometryFBO));
 
@@ -457,7 +457,7 @@ void FWGL_compileShaders(struct FWGL *fwgl) {
   }
 
   unsigned quadProgram = glCreateProgram();
-  fwgl->quadShaderProgram = quadProgram;
+  fwgl->screenShader = quadProgram;
   glAttachShader(quadProgram, quadVertexShader);
   glAttachShader(quadProgram, quadFragmentShader);
   glLinkProgram(quadProgram);
@@ -475,12 +475,10 @@ void FWGL_compileShaders(struct FWGL *fwgl) {
 }
 
 void FWGL_prepareBuffers(struct FWGL *fwgl) {
-  // Handles which will be stored in FWGL
-  unsigned int geometryTexture, quadVAO, quadVBO, dimensionUBO, dataVBO, VAO, vertexVBO, EBO;
-
-  // Framebuffers
+  // Handles
   // Basic output of the particle geometry (semi-transparent circles on a black background)
-  unsigned int geometryFBO;
+  unsigned int dimensionUBO, circleVAO, circleVBO, circleEBO, dataVBO;
+  unsigned int geometryFBO, geometryTexture, geometryShader;
   // A blurred version of the geometry
   unsigned int blurredFBO;
   // A HDR buffer with the bloom (addition) result of the blur and geometry buffers
@@ -488,6 +486,7 @@ void FWGL_prepareBuffers(struct FWGL *fwgl) {
   // A tone-remapped FBO to reduce the bloom to the standard 0-1 range.
   unsigned int tonemappedFBO;
   // Tone-mapped buffer gets drawn to the screen
+  unsigned int screenShader, screenVAO, screenVBO;
 
   int width, height;
   glfwGetWindowSize(fwgl->window, &width, &height);
@@ -515,10 +514,10 @@ void FWGL_prepareBuffers(struct FWGL *fwgl) {
 
   // 2*f Screen Position (x,y)
   // 2*f Texture Coordinates (x,y)
-  glGenVertexArrays(1, &quadVAO);
-  glGenBuffers(1, &quadVBO);
-  glBindVertexArray(quadVAO);
-  glBindBuffer(GL_ARRAY_BUFFER, quadVBO);
+  glGenVertexArrays(1, &screenVAO);
+  glGenBuffers(1, &screenVBO);
+  glBindVertexArray(screenVAO);
+  glBindBuffer(GL_ARRAY_BUFFER, screenVBO);
   glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), quadVertices, GL_STATIC_DRAW);
   glEnableVertexAttribArray(0);
   glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
@@ -537,14 +536,14 @@ void FWGL_prepareBuffers(struct FWGL *fwgl) {
   glGenBuffers(1, &dataVBO);
 
   // Vertices
-  glGenVertexArrays(1, &VAO);
-  glGenBuffers(1, &vertexVBO);
-  glGenBuffers(1, &EBO);
+  glGenVertexArrays(1, &circleVAO);
+  glGenBuffers(1, &circleVBO);
+  glGenBuffers(1, &circleEBO);
 
-  glBindVertexArray(VAO);
-  glBindBuffer(GL_ARRAY_BUFFER, vertexVBO);
+  glBindVertexArray(circleVAO);
+  glBindBuffer(GL_ARRAY_BUFFER, circleVBO);
   glBufferData(GL_ARRAY_BUFFER, sizeof(circleVertices), circleVertices, GL_STATIC_DRAW);
-  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, circleEBO);
   glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(circleIndices), circleIndices, GL_STATIC_DRAW);
 
   // 2*i Dimensions (w,h)
@@ -584,14 +583,17 @@ void FWGL_prepareBuffers(struct FWGL *fwgl) {
 
   glBindVertexArray(0);
 
+  //
+  fwgl->dimensionUBO = dimensionUBO;
+  fwgl->circleVAO = circleVAO;
+  fwgl->circleVBO = circleVBO;
+  fwgl->circleEBO = circleEBO;
+  fwgl->dataVBO = dataVBO;
+  //
   fwgl->geometryFBO = geometryFBO;
   fwgl->geometryTexture = geometryTexture;
-  fwgl->quadVAO = quadVAO;
-  fwgl->VAO = VAO;
-  fwgl->dimensionUBO = dimensionUBO;
-  fwgl->vertexVBO = vertexVBO;
-  fwgl->dataVBO = dataVBO;
-  fwgl->EBO = EBO;
+  //
+  fwgl->screenVAO = screenVAO;
 
   fwgl->error = FWGL_OK;
 }
@@ -650,15 +652,15 @@ void FWGL_render(struct FWGL *fwgl) {
     int indexCount = (int)(sizeof(circleIndices) / sizeof(int));
 
     glUseProgram(fwgl->geometryShader);
-    glBindVertexArray(fwgl->VAO);
+    glBindVertexArray(fwgl->circleVAO);
     glDrawElementsInstanced(GL_TRIANGLES, indexCount, GL_UNSIGNED_INT, 0, renderParticles);
   }
 
   // Return to the regular framebuffer and render the processed texture as a quad
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
   // Don't need to clear colours because quad is opaque.
-  glUseProgram(fwgl->quadShaderProgram);
-  glBindVertexArray(fwgl->quadVAO);
+  glUseProgram(fwgl->screenShader);
+  glBindVertexArray(fwgl->screenVAO);
   glBindTexture(GL_TEXTURE_2D, fwgl->geometryTexture);
   glDrawArrays(GL_TRIANGLES, 0, 6);
 }
