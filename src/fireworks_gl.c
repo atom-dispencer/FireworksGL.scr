@@ -7,83 +7,7 @@
 
 #include "fireworks_gl.h"
 #include "fireworks_gl_process.h"
-
-const char *stdVertexShaderSource =
-    "   #version 330 core                                               \n"
-    "   layout(location = 0) in vec3 aBasePos;                          \n"
-    "   layout(location = 1) in vec3 aTranslate;                        \n"
-    "   layout(location = 2) in vec4 aColour;                           \n"
-    "   layout(location = 3) in float aRadius;                          \n"
-    "   layout(location = 4) in float aRemainingLife;                   \n"
-    "   layout(location = 5) in int aParticleType;                      \n"
-    "                                                                   \n"
-    "   layout (std140) uniform WindowDimensions {                      \n"
-    "       int width;                                                  \n"
-    "       int height;                                                 \n"
-    "   };                                                              \n"
-    "                                                                   \n"
-    "   out vec4 vertexColour;                                          \n"
-    "   out float remainingLife;                                        \n"
-    "   flat out int particleType;                                      \n"
-    "                                                                   \n"
-    "   void main()                                                     \n"
-    "   {                                                               \n"
-    "       gl_Position = vec4(aBasePos*aRadius + aTranslate, 1.0f);    \n"
-    "       gl_Position.x /= (width / 2.0f);                            \n"
-    "       gl_Position.y /= (height / 2.0f);                           \n"
-    "       gl_Position += vec4(-1, -1, 0, 0);                          \n"
-    "       vertexColour = aColour;                                     \n"
-    "       remainingLife = aRemainingLife;                             \n"
-    "       particleType = aParticleType;                               \n"
-    "   }                                                               \n"
-    "\0";
-
-const char *stdFragmentShaderSource =
-    "   #version 330 core                                               \n"
-    "   out vec4 FragColor;                                             \n"
-    "   in vec4 vertexColour;                                           \n"
-    "   in float remainingLife;                                         \n"
-    "   flat in int particleType;                                       \n"
-    "   void main() {                                                   \n"
-    "       FragColor = vec4(vertexColour);                             \n"
-    "       if (particleType == 0 && remainingLife < 0.5) {             \n"
-    "           float factor = 2 * remainingLife;                       \n"
-    "           FragColor.w = factor * factor;                          \n"
-    "       }                                                           \n"
-    "       if (particleType == 2) {                                    \n"
-    "           float factor = remainingLife / 3;                       \n"
-    "           FragColor.w = 0.5 * factor * factor;                    \n"
-    "       }                                                           \n"
-    "   }                                                               \n"
-    "\0";
-
-const char* quadVertexShaderSource =
-    "#version 330 core                                      \n"
-    "layout(location = 0) in vec2 aPos;                     \n"
-    "layout(location = 1) in vec2 aTexCoords;               \n"
-    "                                                       \n"
-    "out vec2 TexCoords;                                    \n"
-    "                                                       \n"
-    "void main()                                            \n"
-    "{                                                      \n"
-    "    gl_Position = vec4(aPos.x, aPos.y, 0.0, 1.0);      \n"
-    "    TexCoords = aTexCoords;                            \n"
-    "}                                                      \n"
-    "\0";
-
-const char* quadFragmentShaderSource =
-    "#version 330 core                                      \n"
-    "out vec4 FragColor;                                    \n"
-    "                                                       \n"
-    "in vec2 TexCoords;                                     \n"
-    "                                                       \n"
-    "uniform sampler2D screenTexture;                       \n"
-    "                                                       \n"
-    "void main()                                            \n"
-    "{                                                      \n"
-    "    FragColor = texture(screenTexture, TexCoords);     \n"
-    "}                                                      \n"
-    "\0";
+#include "fireworks_gl_shaders.h"
 
 const float circleVertices[] = {
     1.000f,  0.000f,  0.0f, 0.866f,  0.500f,  0.0f,
@@ -387,11 +311,11 @@ void FWGL_compileShaders(struct FWGL *fwgl) {
   int success;
   char log[512];
 
-  printf("\nStd Vertex Shader:\n%s\n", stdVertexShaderSource);
-  printf("\nStd Fragment Shader:\n%s\n", stdFragmentShaderSource);
+  printf("\nStd Vertex Shader:\n%s\n", geometryVertexShaderSource);
+  printf("\nStd Fragment Shader:\n%s\n", geometryFragmentShaderSource);
 
   unsigned int stdVertexShader = glCreateShader(GL_VERTEX_SHADER);
-  glShaderSource(stdVertexShader, 1, &stdVertexShaderSource, NULL);
+  glShaderSource(stdVertexShader, 1, &geometryVertexShaderSource, NULL);
   glCompileShader(stdVertexShader);
   glGetShaderiv(stdVertexShader, GL_COMPILE_STATUS, &success);
   if (!success) {
@@ -402,7 +326,7 @@ void FWGL_compileShaders(struct FWGL *fwgl) {
   }
 
   unsigned int stdFragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-  glShaderSource(stdFragmentShader, 1, &stdFragmentShaderSource, NULL);
+  glShaderSource(stdFragmentShader, 1, &geometryFragmentShaderSource, NULL);
   glCompileShader(stdFragmentShader);
   glGetShaderiv(stdFragmentShader, GL_COMPILE_STATUS, &success);
   if (!success) {
@@ -431,11 +355,11 @@ void FWGL_compileShaders(struct FWGL *fwgl) {
 
   // Round 2! (Quad)
 
-  printf("\nQuad Vertex Shader:\n%s\n", quadVertexShaderSource);
-  printf("\nQuad Fragment Shader:\n%s\n", quadFragmentShaderSource);
+  printf("\nQuad Vertex Shader:\n%s\n", screenVertexShaderSource);
+  printf("\nQuad Fragment Shader:\n%s\n", screenFragmentShaderSource);
 
   unsigned int quadVertexShader = glCreateShader(GL_VERTEX_SHADER);
-  glShaderSource(quadVertexShader, 1, &quadVertexShaderSource, NULL);
+  glShaderSource(quadVertexShader, 1, &screenVertexShaderSource, NULL);
   glCompileShader(quadVertexShader);
   glGetShaderiv(quadVertexShader, GL_COMPILE_STATUS, &success);
   if (!success) {
@@ -446,7 +370,7 @@ void FWGL_compileShaders(struct FWGL *fwgl) {
   }
 
   unsigned int quadFragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-  glShaderSource(quadFragmentShader, 1, &quadFragmentShaderSource, NULL);
+  glShaderSource(quadFragmentShader, 1, &screenFragmentShaderSource, NULL);
   glCompileShader(quadFragmentShader);
   glGetShaderiv(quadFragmentShader, GL_COMPILE_STATUS, &success);
   if (!success) {
