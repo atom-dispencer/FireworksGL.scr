@@ -45,6 +45,6 @@ void FWGL_parseArgs(struct FWGL* fwgl, int argc, char* argv[]);
 void FWGL_createGLFWWindow(struct FWGL* fwgl);
 void FWGL_framebufferSizeCallback(GLFWwindow* window, int width, int height);
 void FWGL_process(struct FWGL* fwgl, float dSecs);
-void FWGL_compileShaders(struct FWGL* fwgl);
+void FWGL_compileShader(unsigned int* program, const char* vertexSource, const char* fragSource);
 void FWGL_prepareBuffers(struct FWGL* fwgl);
 void FWGL_render(struct FWGL* fwgl);

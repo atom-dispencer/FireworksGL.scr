@@ -68,7 +68,8 @@ int main(int argc, char *argv[]) {
     return fwgl->error;
   }
 
-  FWGL_compileShaders(fwgl);
+  FWGL_compileShader(&(fwgl->geometryShader), geometryVertexShaderSource, geometryFragmentShaderSource);
+  FWGL_compileShader(&(fwgl->screenShader), screenVertexShaderSource, screenFragmentShaderSource);
   if (fwgl->error != FWGL_OK) {
     printf("Failed to set up rendering infrastructure!\n");
     glfwTerminate();
@@ -306,96 +307,46 @@ void FWGL_process(struct FWGL *fwgl, float dSecs) {
   MoveParticles(&(fwgl->simulation), width, height, dSecs);
 }
 
-void FWGL_compileShaders(struct FWGL *fwgl) {
+void FWGL_compileShader(unsigned int* program, const char* vertexSource, const char* fragSource) {
 
-  int success;
-  char log[512];
+    int success;
+    char log[512];
 
-  printf("\nStd Vertex Shader:\n%s\n", geometryVertexShaderSource);
-  printf("\nStd Fragment Shader:\n%s\n", geometryFragmentShaderSource);
+    printf("\Vertex Shader:\n%s\n", vertexSource);
+    printf("\Fragment Shader:\n%s\n", fragSource);
 
-  unsigned int stdVertexShader = glCreateShader(GL_VERTEX_SHADER);
-  glShaderSource(stdVertexShader, 1, &geometryVertexShaderSource, NULL);
-  glCompileShader(stdVertexShader);
-  glGetShaderiv(stdVertexShader, GL_COMPILE_STATUS, &success);
-  if (!success) {
-    glGetShaderInfoLog(stdVertexShader, 512, NULL, log);
-    printf("Failed to compile std vertex shader: %s", log);
-    fwgl->error = FWGL_ERROR_INIT_COMPILEVERTEX;
-    return;
-  }
+    unsigned int vertexShader = glCreateShader(GL_VERTEX_SHADER);
+    glShaderSource(vertexShader, 1, &vertexSource, NULL);
+    glCompileShader(vertexShader);
+    glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success);
+    if (!success) {
+        glGetShaderInfoLog(vertexShader, 512, NULL, log);
+        printf("Failed to compile vertex shader: %s", log);
+    }
 
-  unsigned int stdFragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-  glShaderSource(stdFragmentShader, 1, &geometryFragmentShaderSource, NULL);
-  glCompileShader(stdFragmentShader);
-  glGetShaderiv(stdFragmentShader, GL_COMPILE_STATUS, &success);
-  if (!success) {
-    glGetShaderInfoLog(stdFragmentShader, 512, NULL, log);
-    printf("Failed to compile std fragment shader: %s", log);
-    fwgl->error = FWGL_ERROR_INIT_COMPILEVERTEX;
-    return;
-  }
+    unsigned int fragShader = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(fragShader, 1, &fragSource, NULL);
+    glCompileShader(fragShader);
+    glGetShaderiv(fragShader, GL_COMPILE_STATUS, &success);
+    if (!success) {
+        glGetShaderInfoLog(fragShader, 512, NULL, log);
+        printf("Failed to compile fragment shader: %s", log);
+    }
 
-  unsigned stdProgram = glCreateProgram();
-  fwgl->geometryShader = stdProgram;
-  glAttachShader(stdProgram, stdVertexShader);
-  glAttachShader(stdProgram, stdFragmentShader);
-  glLinkProgram(stdProgram);
-  glGetProgramiv(stdProgram, GL_LINK_STATUS, &success);
-  if (!success) {
-    glGetProgramInfoLog(stdProgram, 512, NULL, log);
-    printf("Failed to link shader program: %s", log);
-    fwgl->error = FWGL_ERROR_INIT_SHADERLINK;
-    return;
-  }
+    unsigned quadProgram = glCreateProgram();
+    *program = quadProgram;
+    glAttachShader(quadProgram, vertexShader);
+    glAttachShader(quadProgram, fragShader);
+    glLinkProgram(quadProgram);
+    glGetProgramiv(quadProgram, GL_LINK_STATUS, &success);
+    if (!success) {
+        glGetProgramInfoLog(quadProgram, 512, NULL, log);
+        printf("Failed to link quad shader program: %s", log);
+    }
 
-  glDeleteShader(stdVertexShader);
-  glDeleteShader(stdFragmentShader);
-  printf("Successfully compiled and linked std shader program!\n");
-
-  // Round 2! (Quad)
-
-  printf("\nQuad Vertex Shader:\n%s\n", screenVertexShaderSource);
-  printf("\nQuad Fragment Shader:\n%s\n", screenFragmentShaderSource);
-
-  unsigned int quadVertexShader = glCreateShader(GL_VERTEX_SHADER);
-  glShaderSource(quadVertexShader, 1, &screenVertexShaderSource, NULL);
-  glCompileShader(quadVertexShader);
-  glGetShaderiv(quadVertexShader, GL_COMPILE_STATUS, &success);
-  if (!success) {
-      glGetShaderInfoLog(quadVertexShader, 512, NULL, log);
-      printf("Failed to compile quad vertex shader: %s", log);
-      fwgl->error = FWGL_ERROR_INIT_COMPILEVERTEX;
-      return;
-  }
-
-  unsigned int quadFragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-  glShaderSource(quadFragmentShader, 1, &screenFragmentShaderSource, NULL);
-  glCompileShader(quadFragmentShader);
-  glGetShaderiv(quadFragmentShader, GL_COMPILE_STATUS, &success);
-  if (!success) {
-      glGetShaderInfoLog(quadFragmentShader, 512, NULL, log);
-      printf("Failed to compile quad fragment shader: %s", log);
-      fwgl->error = FWGL_ERROR_INIT_COMPILEVERTEX;
-      return;
-  }
-
-  unsigned quadProgram = glCreateProgram();
-  fwgl->screenShader = quadProgram;
-  glAttachShader(quadProgram, quadVertexShader);
-  glAttachShader(quadProgram, quadFragmentShader);
-  glLinkProgram(quadProgram);
-  glGetProgramiv(quadProgram, GL_LINK_STATUS, &success);
-  if (!success) {
-      glGetProgramInfoLog(quadProgram, 512, NULL, log);
-      printf("Failed to link quad shader program: %s", log);
-      fwgl->error = FWGL_ERROR_INIT_SHADERLINK;
-      return;
-  }
-
-  glDeleteShader(quadVertexShader);
-  glDeleteShader(quadFragmentShader);
-  printf("Successfully compiled and linked quad shader program!\n");
+    glDeleteShader(vertexShader);
+    glDeleteShader(fragShader);
+    printf("Successfully compiled and linked shader program!\n");
 }
 
 void FWGL_makeFramebuffer(unsigned int* framebuffer, unsigned int* texture, int width, int height) {
