@@ -109,14 +109,15 @@ const int circleIndices[] = {
     0, 4, 8, 8, 12, 0};
 
 float quadVertices[] = {
+    // Screen position      // Texture position
     // Top left triangle
-     1,  1, 0,
-    -1, -1, 0,
-    -1,  1, 0,
+    -1,  1,                 0, 1,
+    -1, -1,                 0, 0,
+     1, -1,                 1, 0,
     // Bottom right triangle
-     1,  1, 0,
-    -1, -1, 0,
-     1, -1, 0
+    -1,  1,                 0, 1,
+     1, -1,                 1, 0,
+     1,  1,                 1, 1
 };
 
 int main(int argc, char *argv[]) {
