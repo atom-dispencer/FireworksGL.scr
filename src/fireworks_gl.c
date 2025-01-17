@@ -219,7 +219,7 @@ enum FWGL_Error FWGL_Init(struct FWGL *fwgl, int maxParticles, int maxRockets) {
     printf("particles will be allocated %d bytes\n", renderDataAllocation);
 
     fwgl->is_preview = 0;
-    fwgl->window, fwgl->stdShaderProgram, fwgl->VAO, fwgl->vertexVBO, fwgl->dataVBO,
+    fwgl->window, fwgl->geometryShader, fwgl->VAO, fwgl->vertexVBO, fwgl->dataVBO,
     fwgl->EBO = -1;
     fwgl->renderData = malloc(renderDataAllocation);
 
@@ -284,7 +284,7 @@ enum FWGL_Error FWGL_DeInit(struct FWGL *fwgl) {
     glDeleteVertexArrays(1, &(fwgl->VAO));
     glDeleteBuffers(1, &(fwgl->vertexVBO));
     glDeleteBuffers(1, &(fwgl->EBO));
-    glDeleteProgram(fwgl->stdShaderProgram);
+    glDeleteProgram(fwgl->geometryShader);
     glDeleteFramebuffers(1, &(fwgl->geometryFBO));
 
     printf("Freeing memory...  ");
@@ -413,7 +413,7 @@ void FWGL_compileShaders(struct FWGL *fwgl) {
   }
 
   unsigned stdProgram = glCreateProgram();
-  fwgl->stdShaderProgram = stdProgram;
+  fwgl->geometryShader = stdProgram;
   glAttachShader(stdProgram, stdVertexShader);
   glAttachShader(stdProgram, stdFragmentShader);
   glLinkProgram(stdProgram);
@@ -649,7 +649,7 @@ void FWGL_render(struct FWGL *fwgl) {
 
     int indexCount = (int)(sizeof(circleIndices) / sizeof(int));
 
-    glUseProgram(fwgl->stdShaderProgram);
+    glUseProgram(fwgl->geometryShader);
     glBindVertexArray(fwgl->VAO);
     glDrawElementsInstanced(GL_TRIANGLES, indexCount, GL_UNSIGNED_INT, 0, renderParticles);
   }
