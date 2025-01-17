@@ -363,15 +363,30 @@ void FWGL_makeTexture(unsigned int* texture, int width, int height) {
     *texture = handle;
 }
 
+void FWGL_makeFramebuffer(unsigned int* framebuffer, unsigned int texture) {
+    unsigned int fbo;
+    glGenFramebuffers(1, &fbo);
+    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture, 0);
+    GLenum fbStatus = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+    if (GL_FRAMEBUFFER_COMPLETE != fbStatus) {
+        printf("Erronious framebuffer status: %d\n", fbStatus);
+    }
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+    *framebuffer = fbo;
+}
+
 void FWGL_prepareBuffers(struct FWGL *fwgl) {
   // Handles
   // Basic output of the particle geometry (semi-transparent circles on a black background)
   unsigned int dimensionUBO, circleVAO, circleVBO, circleEBO, dataVBO;
   unsigned int geometryFBO, geometryTexture, geometryShader;
   // A blurred version of the geometry
-  unsigned int blurredFBO;
+  unsigned int blurredFBO1, blurredTexture1, blurredShader;
+  unsigned int blurredFBO2, blurredTexture2;
   // A HDR buffer with the bloom (addition) result of the blur and geometry buffers
-  unsigned int combinedFBO;
+  unsigned int bloomFBO;
   // A tone-remapped FBO to reduce the bloom to the standard 0-1 range.
   unsigned int tonemappedFBO;
   // Tone-mapped buffer gets drawn to the screen
@@ -385,17 +400,9 @@ void FWGL_prepareBuffers(struct FWGL *fwgl) {
   //
   // Texture
   FWGL_makeTexture(&geometryTexture, width, height);
+  FWGL_makeFramebuffer(&geometryFBO, geometryTexture);
   // Framebuffer
-  glGenFramebuffers(1, &geometryFBO);
-  glBindFramebuffer(GL_FRAMEBUFFER, geometryFBO);
-  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, geometryTexture, 0);
-  GLenum fbStatus = glCheckFramebufferStatus(GL_FRAMEBUFFER);
-  if (GL_FRAMEBUFFER_COMPLETE != fbStatus) {
-      printf("Erronious framebuffer status: %d\n", fbStatus);
-      fwgl->error = FWGL_ERROR_PREPBUFFER_FRAME_RENDER;
-      return;
-  }
-  glBindFramebuffer(GL_FRAMEBUFFER, 0);
+  
 
   // 2*f Screen Position (x,y)
   // 2*f Texture Coordinates (x,y)
