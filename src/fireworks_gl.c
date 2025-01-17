@@ -349,25 +349,6 @@ void FWGL_compileShader(unsigned int* program, const char* vertexSource, const c
     printf("Successfully compiled and linked shader program!\n");
 }
 
-void FWGL_makeFramebuffer(unsigned int* framebuffer, unsigned int* texture, int width, int height) {
-    glGenTextures(1, &texture);
-    glBindTexture(GL_TEXTURE_2D, texture);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    // Framebuffer
-    glGenFramebuffers(1, &framebuffer);
-    glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture, 0);
-    GLenum fbStatus = glCheckFramebufferStatus(GL_FRAMEBUFFER);
-    if (GL_FRAMEBUFFER_COMPLETE != fbStatus) {
-        printf("Erronious framebuffer status: %d\n", fbStatus);
-    }
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-}
-
 void FWGL_prepareBuffers(struct FWGL *fwgl) {
   // Handles
   // Basic output of the particle geometry (semi-transparent circles on a black background)
@@ -389,25 +370,24 @@ void FWGL_prepareBuffers(struct FWGL *fwgl) {
   // Visual Effects
   //
   // Texture
-  FWGL_makeFramebuffer(&geometryFBO, &geometryTexture, width, height);
-  //glGenTextures(1, &geometryTexture);
-  //glBindTexture(GL_TEXTURE_2D, geometryTexture);
-  //glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-  //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-  //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-  //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-  //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-  //// Framebuffer
-  //glGenFramebuffers(1, &geometryFBO);
-  //glBindFramebuffer(GL_FRAMEBUFFER, geometryFBO);
-  //glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, geometryTexture, 0);
-  //GLenum fbStatus = glCheckFramebufferStatus(GL_FRAMEBUFFER);
-  //if (GL_FRAMEBUFFER_COMPLETE != fbStatus) {
-  //    printf("Erronious framebuffer status: %d\n", fbStatus);
-  //    fwgl->error = FWGL_ERROR_PREPBUFFER_FRAME_RENDER;
-  //    return;
-  //}
-  //glBindFramebuffer(GL_FRAMEBUFFER, 0);
+  glGenTextures(1, &geometryTexture);
+  glBindTexture(GL_TEXTURE_2D, geometryTexture);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+  // Framebuffer
+  glGenFramebuffers(1, &geometryFBO);
+  glBindFramebuffer(GL_FRAMEBUFFER, geometryFBO);
+  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, geometryTexture, 0);
+  GLenum fbStatus = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+  if (GL_FRAMEBUFFER_COMPLETE != fbStatus) {
+      printf("Erronious framebuffer status: %d\n", fbStatus);
+      fwgl->error = FWGL_ERROR_PREPBUFFER_FRAME_RENDER;
+      return;
+  }
+  glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
   // 2*f Screen Position (x,y)
   // 2*f Texture Coordinates (x,y)
