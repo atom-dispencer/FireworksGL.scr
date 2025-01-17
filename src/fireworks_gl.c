@@ -8,7 +8,7 @@
 #include "fireworks_gl.h"
 #include "fireworks_gl_process.h"
 
-const char *vertexShaderSource =
+const char *stdVertexShaderSource =
     "   #version 330 core                                               \n"
     "   layout(location = 0) in vec3 aBasePos;                          \n"
     "   layout(location = 1) in vec3 aTranslate;                        \n"
@@ -38,14 +38,14 @@ const char *vertexShaderSource =
     "   }                                                               \n"
     "\0";
 
-const char *fragmentShaderSource =
+const char *stdFragmentShaderSource =
     "   #version 330 core                                               \n"
     "   out vec4 FragColor;                                             \n"
     "   in vec4 vertexColour;                                           \n"
     "   in float remainingLife;                                         \n"
     "   flat in int particleType;                                       \n"
     "   void main() {                                                   \n"
-    "       FragColor = vec4(vertexColour);                             \n"/*
+    "       FragColor = vec4(vertexColour);                             \n"
     "       if (particleType == 0 && remainingLife < 0.5) {             \n"
     "           float factor = 2 * remainingLife;                       \n"
     "           FragColor.w = factor * factor;                          \n"
@@ -53,8 +53,36 @@ const char *fragmentShaderSource =
     "       if (particleType == 2) {                                    \n"
     "           float factor = remainingLife / 3;                       \n"
     "           FragColor.w = 0.5 * factor * factor;                    \n"
-    "       }                                                           \n"*/
+    "       }                                                           \n"
     "   }                                                               \n"
+    "\0";
+
+const char* quadVertexShaderSource =
+    "#version 330 core                                      \n"
+    "layout(location = 0) in vec2 aPos;                     \n"
+    "layout(location = 1) in vec2 aTexCoords;               \n"
+    "                                                       \n"
+    "out vec2 TexCoords;                                    \n"
+    "                                                       \n"
+    "void main()                                            \n"
+    "{                                                      \n"
+    "    gl_Position = vec4(aPos.x, aPos.y, 0.0, 1.0);      \n"
+    "    TexCoords = aTexCoords;                            \n"
+    "}                                                      \n"
+    "\0";
+
+const char* quadFragmentShaderSource =
+    "#version 330 core                                      \n"
+    "out vec4 FragColor;                                    \n"
+    "                                                       \n"
+    "in vec2 TexCoords;                                     \n"
+    "                                                       \n"
+    "uniform sampler2D screenTexture;                       \n"
+    "                                                       \n"
+    "void main()                                            \n"
+    "{                                                      \n"
+    "    FragColor = texture(screenTexture, TexCoords);     \n"
+    "}                                                      \n"
     "\0";
 
 const float circleVertices[] = {
@@ -70,6 +98,7 @@ const float circleVertices[] = {
     0.000f,  -1.000f, 0.0f, 0.500f,  -0.866f, 0.0f,
     0.707f,  -0.707f, 0.0f, 0.866f,  -0.500f, 0.0f,
 };
+
 const int circleIndices[] = {
     // Edge of the circle
     0, 1, 2, 2, 3, 4, 4, 5, 6, 6, 7, 8, 8, 9, 10, 10, 11, 12, 12, 13, 14, 14,
@@ -78,6 +107,17 @@ const int circleIndices[] = {
     0, 2, 4, 4, 6, 8, 8, 10, 12, 12, 14, 0,
     //
     0, 4, 8, 8, 12, 0};
+
+float quadVertices[] = {
+    // Top left triangle
+     1,  1, 0,
+    -1, -1, 0,
+    -1,  1, 0,
+    // Bottom right triangle
+     1,  1, 0,
+    -1, -1, 0,
+     1, -1, 0
+};
 
 int main(int argc, char *argv[]) {
   printf("FireworksGL!\n");
@@ -178,7 +218,7 @@ enum FWGL_Error FWGL_Init(struct FWGL *fwgl, int maxParticles, int maxRockets) {
     printf("particles will be allocated %d bytes\n", renderDataAllocation);
 
     fwgl->is_preview = 0;
-    fwgl->window, fwgl->shaderProgram, fwgl->VAO, fwgl->vertexVBO, fwgl->dataVBO,
+    fwgl->window, fwgl->stdShaderProgram, fwgl->VAO, fwgl->vertexVBO, fwgl->dataVBO,
     fwgl->EBO = -1;
     fwgl->renderData = malloc(renderDataAllocation);
 
@@ -243,7 +283,7 @@ enum FWGL_Error FWGL_DeInit(struct FWGL *fwgl) {
     glDeleteVertexArrays(1, &(fwgl->VAO));
     glDeleteBuffers(1, &(fwgl->vertexVBO));
     glDeleteBuffers(1, &(fwgl->EBO));
-    glDeleteProgram(fwgl->shaderProgram);
+    glDeleteProgram(fwgl->stdShaderProgram);
     glDeleteFramebuffers(1, &(fwgl->vfxFBO));
 
     printf("Freeing memory...  ");
@@ -342,67 +382,114 @@ void FWGL_process(struct FWGL *fwgl, float dSecs) {
 }
 
 void FWGL_compileShaders(struct FWGL *fwgl) {
-  printf("\nVertex Shader:\n%s\n", vertexShaderSource);
-  printf("\nFragment Shader:\n%s\n", fragmentShaderSource);
 
   int success;
   char log[512];
 
-  unsigned int vertexShader = glCreateShader(GL_VERTEX_SHADER);
-  glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
-  glCompileShader(vertexShader);
-  glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success);
+  printf("\nStd Vertex Shader:\n%s\n", stdVertexShaderSource);
+  printf("\nStd Fragment Shader:\n%s\n", stdFragmentShaderSource);
+
+  unsigned int stdVertexShader = glCreateShader(GL_VERTEX_SHADER);
+  glShaderSource(stdVertexShader, 1, &stdVertexShaderSource, NULL);
+  glCompileShader(stdVertexShader);
+  glGetShaderiv(stdVertexShader, GL_COMPILE_STATUS, &success);
   if (!success) {
-    glGetShaderInfoLog(vertexShader, 512, NULL, log);
-    printf("Failed to compile vertex shader: %s", log);
+    glGetShaderInfoLog(stdVertexShader, 512, NULL, log);
+    printf("Failed to compile std vertex shader: %s", log);
     fwgl->error = FWGL_ERROR_INIT_COMPILEVERTEX;
     return;
   }
 
-  unsigned int fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-  glShaderSource(fragmentShader, 1, &fragmentShaderSource, NULL);
-  glCompileShader(fragmentShader);
-  glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);
+  unsigned int stdFragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+  glShaderSource(stdFragmentShader, 1, &stdFragmentShaderSource, NULL);
+  glCompileShader(stdFragmentShader);
+  glGetShaderiv(stdFragmentShader, GL_COMPILE_STATUS, &success);
   if (!success) {
-    glGetShaderInfoLog(fragmentShader, 512, NULL, log);
-    printf("Failed to compile fragment shader: %s", log);
+    glGetShaderInfoLog(stdFragmentShader, 512, NULL, log);
+    printf("Failed to compile std fragment shader: %s", log);
     fwgl->error = FWGL_ERROR_INIT_COMPILEVERTEX;
     return;
   }
 
-  unsigned program = glCreateProgram();
-  fwgl->shaderProgram = program;
-  glAttachShader(program, vertexShader);
-  glAttachShader(program, fragmentShader);
-  glLinkProgram(program);
-  glGetProgramiv(program, GL_LINK_STATUS, &success);
+  unsigned stdProgram = glCreateProgram();
+  fwgl->stdShaderProgram = stdProgram;
+  glAttachShader(stdProgram, stdVertexShader);
+  glAttachShader(stdProgram, stdFragmentShader);
+  glLinkProgram(stdProgram);
+  glGetProgramiv(stdProgram, GL_LINK_STATUS, &success);
   if (!success) {
-    glGetProgramInfoLog(program, 512, NULL, log);
+    glGetProgramInfoLog(stdProgram, 512, NULL, log);
     printf("Failed to link shader program: %s", log);
     fwgl->error = FWGL_ERROR_INIT_SHADERLINK;
     return;
   }
 
-  glDeleteShader(vertexShader);
-  glDeleteShader(fragmentShader);
-  printf("Successfully compiled and linked shader program!\n");
+  glDeleteShader(stdVertexShader);
+  glDeleteShader(stdFragmentShader);
+  printf("Successfully compiled and linked std shader program!\n");
+
+  // Round 2! (Quad)
+
+  printf("\nQuad Vertex Shader:\n%s\n", quadVertexShaderSource);
+  printf("\nQuad Fragment Shader:\n%s\n", quadFragmentShaderSource);
+
+  unsigned int quadVertexShader = glCreateShader(GL_VERTEX_SHADER);
+  glShaderSource(quadVertexShader, 1, &quadVertexShaderSource, NULL);
+  glCompileShader(quadVertexShader);
+  glGetShaderiv(quadVertexShader, GL_COMPILE_STATUS, &success);
+  if (!success) {
+      glGetShaderInfoLog(quadVertexShader, 512, NULL, log);
+      printf("Failed to compile quad vertex shader: %s", log);
+      fwgl->error = FWGL_ERROR_INIT_COMPILEVERTEX;
+      return;
+  }
+
+  unsigned int quadFragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+  glShaderSource(quadFragmentShader, 1, &quadFragmentShaderSource, NULL);
+  glCompileShader(quadFragmentShader);
+  glGetShaderiv(quadFragmentShader, GL_COMPILE_STATUS, &success);
+  if (!success) {
+      glGetShaderInfoLog(quadFragmentShader, 512, NULL, log);
+      printf("Failed to compile quad fragment shader: %s", log);
+      fwgl->error = FWGL_ERROR_INIT_COMPILEVERTEX;
+      return;
+  }
+
+  unsigned quadProgram = glCreateProgram();
+  fwgl->quadShaderProgram = quadProgram;
+  glAttachShader(quadProgram, quadVertexShader);
+  glAttachShader(quadProgram, quadFragmentShader);
+  glLinkProgram(quadProgram);
+  glGetProgramiv(quadProgram, GL_LINK_STATUS, &success);
+  if (!success) {
+      glGetProgramInfoLog(quadProgram, 512, NULL, log);
+      printf("Failed to link quad shader program: %s", log);
+      fwgl->error = FWGL_ERROR_INIT_SHADERLINK;
+      return;
+  }
+
+  glDeleteShader(quadVertexShader);
+  glDeleteShader(quadFragmentShader);
+  printf("Successfully compiled and linked quad shader program!\n");
 }
 
 void FWGL_prepareBuffers(struct FWGL *fwgl) {
   // Handles which will be stored in FWGL
-  unsigned int vfxFBO, dimensionUBO, dataVBO, VAO, vertexVBO, EBO;
+  unsigned int vfxFBO, vfxTexture, quadVAO, quadVBO, dimensionUBO, dataVBO, VAO, vertexVBO, EBO;
 
   int width, height;
   glfwGetWindowSize(fwgl->window, &width, &height);
 
-  // Visual Effects Texture
-  unsigned int vfxTexture;
+  // 
+  // Visual Effects
+  //
+  // Texture
   glGenTextures(1, &vfxTexture);
   glBindTexture(GL_TEXTURE_2D, vfxTexture);
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-  // Visual Effects Framebuffer
+  // Framebuffer
   glGenFramebuffers(1, &vfxFBO);
   glBindFramebuffer(GL_FRAMEBUFFER, vfxFBO);
   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, vfxTexture, 0);
@@ -413,6 +500,22 @@ void FWGL_prepareBuffers(struct FWGL *fwgl) {
       return;
   }
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+  // 2*f Screen Position (x,y)
+  // 2*f Texture Coordinates (x,y)
+  glGenVertexArrays(1, &quadVAO);
+  glGenBuffers(1, &quadVBO);
+  glBindVertexArray(quadVAO);
+  glBindBuffer(GL_ARRAY_BUFFER, quadVBO);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), quadVertices, GL_STATIC_DRAW);
+  glEnableVertexAttribArray(0);
+  glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
+  glEnableVertexAttribArray(1);
+  glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
+
+  //
+  // Standard rendering
+  //
 
   // 3*f Translate (x,y,z)
   // 4*f Colour (r,g,b,a)
@@ -470,6 +573,8 @@ void FWGL_prepareBuffers(struct FWGL *fwgl) {
   glBindVertexArray(0);
 
   fwgl->vfxFBO = vfxFBO;
+  fwgl->vfxTexture = vfxTexture;
+  fwgl->quadVAO = quadVAO;
   fwgl->VAO = VAO;
   fwgl->dimensionUBO = dimensionUBO;
   fwgl->vertexVBO = vertexVBO;
@@ -519,6 +624,8 @@ void FWGL_render(struct FWGL *fwgl) {
   glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(dimensions), &dimensions);
   glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
+  // Does this need to come before the uniform buffer?
+  glBindFramebuffer(GL_FRAMEBUFFER, fwgl->vfxFBO);
   glClearColor(0, 0, 0, 1);
   glClear(GL_COLOR_BUFFER_BIT);
 
@@ -530,8 +637,16 @@ void FWGL_render(struct FWGL *fwgl) {
 
     int indexCount = (int)(sizeof(circleIndices) / sizeof(int));
 
-    glUseProgram(fwgl->shaderProgram);
+    glUseProgram(fwgl->stdShaderProgram);
     glBindVertexArray(fwgl->VAO);
     glDrawElementsInstanced(GL_TRIANGLES, indexCount, GL_UNSIGNED_INT, 0, renderParticles);
   }
+
+  // Return to the regular framebuffer and render the processed texture as a quad
+  glBindFramebuffer(GL_FRAMEBUFFER, 0);
+  // Don't need to clear colours because quad is opaque.
+  glUseProgram(fwgl->quadShaderProgram);
+  glBindVertexArray(fwgl->quadVAO);
+  glBindTexture(GL_TEXTURE_2D, fwgl->vfxTexture);
+  glDrawArrays(GL_TRIANGLES, 0, 6);
 }

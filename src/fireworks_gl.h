@@ -28,8 +28,8 @@ struct FWGL {
 	uint8_t is_preview;
 	GLFWwindow* window;
 
-	unsigned int shaderProgram;
-	unsigned int vfxFBO, dimensionUBO, VAO, vertexVBO, dataVBO, EBO;
+	unsigned int stdShaderProgram, quadShaderProgram;
+	unsigned int vfxFBO, vfxTexture, quadVAO, dimensionUBO, VAO, vertexVBO, dataVBO, EBO;
 	struct FWGLSimulation simulation;
 	struct ParticleRenderData* renderData;
 };
