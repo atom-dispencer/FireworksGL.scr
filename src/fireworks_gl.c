@@ -70,11 +70,7 @@ int main(int argc, char *argv[]) {
 
   FWGL_compileShader(&(fwgl->geometryShader), geometryVertexShaderSource, geometryFragmentShaderSource);
   FWGL_compileShader(&(fwgl->screenShader), screenVertexShaderSource, screenFragmentShaderSource);
-  if (fwgl->error != FWGL_OK) {
-    printf("Failed to set up rendering infrastructure!\n");
-    glfwTerminate();
-    return fwgl->error;
-  }
+  FWGL_compileShader(&(fwgl->blurredShader), blurVertexShaderSource, blurFragmentShaderSource);
 
   // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
   // glfwSwapInterval(0);  // 0 for vsync off
@@ -378,7 +374,9 @@ void FWGL_makeFramebuffer(unsigned int* framebuffer, unsigned int texture) {
 }
 
 void FWGL_prepareBuffers(struct FWGL *fwgl) {
+  // 
   // Handles
+  // 
   // Basic output of the particle geometry (semi-transparent circles on a black background)
   unsigned int dimensionUBO, circleVAO, circleVBO, circleEBO, dataVBO;
   unsigned int geometryFBO, geometryTexture, geometryShader;
@@ -395,13 +393,17 @@ void FWGL_prepareBuffers(struct FWGL *fwgl) {
   int width, height;
   glfwGetWindowSize(fwgl->window, &width, &height);
 
-  // 
-  // Visual Effects
   //
-  // Texture
+  // Framebuffers
+  //
+  // Geometry
   FWGL_makeTexture(&geometryTexture, width, height);
   FWGL_makeFramebuffer(&geometryFBO, geometryTexture);
-  // Framebuffer
+  // Blur
+  FWGL_makeTexture(&blurredTexture1, width, height);
+  FWGL_makeTexture(&blurredTexture2, width, height);
+  FWGL_makeFramebuffer(&blurredFBO1, blurredTexture1);
+  FWGL_makeFramebuffer(&blurredFBO2, blurredTexture2);
   
 
   // 2*f Screen Position (x,y)
@@ -485,6 +487,11 @@ void FWGL_prepareBuffers(struct FWGL *fwgl) {
   fwgl->geometryFBO = geometryFBO;
   fwgl->geometryTexture = geometryTexture;
   //
+  fwgl->blurredFBO1 = blurredFBO1;
+  fwgl->blurredTexture1 = blurredTexture1;
+  fwgl->blurredFBO2 = blurredFBO2;
+  fwgl->blurredTexture2 = blurredTexture2;
+  //
   fwgl->screenVAO = screenVAO;
 
   fwgl->error = FWGL_OK;
@@ -492,6 +499,10 @@ void FWGL_prepareBuffers(struct FWGL *fwgl) {
 
 void FWGL_render(struct FWGL *fwgl) {
 
+
+    //
+    // Geometry
+    //
   struct FWGLSimulation *simulation = &(fwgl->simulation);
   struct Particle *p;
 
@@ -548,11 +559,23 @@ void FWGL_render(struct FWGL *fwgl) {
     glDrawElementsInstanced(GL_TRIANGLES, indexCount, GL_UNSIGNED_INT, 0, renderParticles);
   }
 
-  // Return to the regular framebuffer and render the processed texture as a quad
-  glBindFramebuffer(GL_FRAMEBUFFER, 0);
-  // Don't need to clear colours because quad is opaque.
-  glUseProgram(fwgl->screenShader);
+  //
+  // Blur
+  //
+  glBindFramebuffer(GL_FRAMEBUFFER, fwgl->blurredFBO1);
+  glUseProgram(fwgl->blurredShader);
   glBindVertexArray(fwgl->screenVAO);
   glBindTexture(GL_TEXTURE_2D, fwgl->geometryTexture);
+  glDrawArrays(GL_TRIANGLES, 0, 6);
+
+  //
+  // Screen
+  // 
+  // Return to the regular framebuffer and render the processed texture as a quad
+  // Don't need to clear colours because quad is opaque.
+  glBindFramebuffer(GL_FRAMEBUFFER, 0);
+  glUseProgram(fwgl->screenShader);
+  glBindVertexArray(fwgl->screenVAO);
+  glBindTexture(GL_TEXTURE_2D, fwgl->blurredTexture1);
   glDrawArrays(GL_TRIANGLES, 0, 6);
 }
