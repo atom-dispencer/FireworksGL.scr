@@ -285,7 +285,7 @@ enum FWGL_Error FWGL_DeInit(struct FWGL *fwgl) {
     glDeleteBuffers(1, &(fwgl->vertexVBO));
     glDeleteBuffers(1, &(fwgl->EBO));
     glDeleteProgram(fwgl->stdShaderProgram);
-    glDeleteFramebuffers(1, &(fwgl->vfxFBO));
+    glDeleteFramebuffers(1, &(fwgl->geometryFBO));
 
     printf("Freeing memory...  ");
     free(fwgl->renderData);
@@ -476,7 +476,18 @@ void FWGL_compileShaders(struct FWGL *fwgl) {
 
 void FWGL_prepareBuffers(struct FWGL *fwgl) {
   // Handles which will be stored in FWGL
-  unsigned int vfxFBO, vfxTexture, quadVAO, quadVBO, dimensionUBO, dataVBO, VAO, vertexVBO, EBO;
+  unsigned int geometryTexture, quadVAO, quadVBO, dimensionUBO, dataVBO, VAO, vertexVBO, EBO;
+
+  // Framebuffers
+  // Basic output of the particle geometry (semi-transparent circles on a black background)
+  unsigned int geometryFBO;
+  // A blurred version of the geometry
+  unsigned int blurredFBO;
+  // A HDR buffer with the bloom (addition) result of the blur and geometry buffers
+  unsigned int combinedFBO;
+  // A tone-remapped FBO to reduce the bloom to the standard 0-1 range.
+  unsigned int tonemappedFBO;
+  // Tone-mapped buffer gets drawn to the screen
 
   int width, height;
   glfwGetWindowSize(fwgl->window, &width, &height);
@@ -485,15 +496,15 @@ void FWGL_prepareBuffers(struct FWGL *fwgl) {
   // Visual Effects
   //
   // Texture
-  glGenTextures(1, &vfxTexture);
-  glBindTexture(GL_TEXTURE_2D, vfxTexture);
+  glGenTextures(1, &geometryTexture);
+  glBindTexture(GL_TEXTURE_2D, geometryTexture);
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
   // Framebuffer
-  glGenFramebuffers(1, &vfxFBO);
-  glBindFramebuffer(GL_FRAMEBUFFER, vfxFBO);
-  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, vfxTexture, 0);
+  glGenFramebuffers(1, &geometryFBO);
+  glBindFramebuffer(GL_FRAMEBUFFER, geometryFBO);
+  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, geometryTexture, 0);
   GLenum fbStatus = glCheckFramebufferStatus(GL_FRAMEBUFFER);
   if (GL_FRAMEBUFFER_COMPLETE != fbStatus) {
       printf("Erronious framebuffer status: %d\n", fbStatus);
@@ -573,8 +584,8 @@ void FWGL_prepareBuffers(struct FWGL *fwgl) {
 
   glBindVertexArray(0);
 
-  fwgl->vfxFBO = vfxFBO;
-  fwgl->vfxTexture = vfxTexture;
+  fwgl->geometryFBO = geometryFBO;
+  fwgl->geometryTexture = geometryTexture;
   fwgl->quadVAO = quadVAO;
   fwgl->VAO = VAO;
   fwgl->dimensionUBO = dimensionUBO;
@@ -626,7 +637,7 @@ void FWGL_render(struct FWGL *fwgl) {
   glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
   // Does this need to come before the uniform buffer?
-  glBindFramebuffer(GL_FRAMEBUFFER, fwgl->vfxFBO);
+  glBindFramebuffer(GL_FRAMEBUFFER, fwgl->geometryFBO);
   glClearColor(0, 0, 0, 1);
   glClear(GL_COLOR_BUFFER_BIT);
 
@@ -648,6 +659,6 @@ void FWGL_render(struct FWGL *fwgl) {
   // Don't need to clear colours because quad is opaque.
   glUseProgram(fwgl->quadShaderProgram);
   glBindVertexArray(fwgl->quadVAO);
-  glBindTexture(GL_TEXTURE_2D, fwgl->vfxTexture);
+  glBindTexture(GL_TEXTURE_2D, fwgl->geometryTexture);
   glDrawArrays(GL_TRIANGLES, 0, 6);
 }

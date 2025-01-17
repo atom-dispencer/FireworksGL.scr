@@ -29,7 +29,7 @@ struct FWGL {
 	GLFWwindow* window;
 
 	unsigned int stdShaderProgram, quadShaderProgram;
-	unsigned int vfxFBO, vfxTexture, quadVAO, dimensionUBO, VAO, vertexVBO, dataVBO, EBO;
+	unsigned int geometryFBO, geometryTexture, quadVAO, dimensionUBO, VAO, vertexVBO, dataVBO, EBO;
 	struct FWGLSimulation simulation;
 	struct ParticleRenderData* renderData;
 };
