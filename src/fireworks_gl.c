@@ -110,11 +110,11 @@ const int circleIndices[] = {
 
 float quadVertices[] = {
     // Screen position      // Texture position
-    // Top left triangle
+    // Bottom left triangle
     -1,  1,                 0, 1,
     -1, -1,                 0, 0,
      1, -1,                 1, 0,
-    // Bottom right triangle
+    // Top right triangle
     -1,  1,                 0, 1,
      1, -1,                 1, 0,
      1,  1,                 1, 1
