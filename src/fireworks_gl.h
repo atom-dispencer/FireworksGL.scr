@@ -33,7 +33,7 @@ struct FWGL {
 	unsigned int geometryFBO, geometryTexture, geometryShader;
 	unsigned int blurredFBO1, blurredTexture1, blurredShader;
 	unsigned int blurredFBO2, blurredTexture2;
-	// For finally showing on the screen
+	unsigned int bloomFBO, bloomTexture, bloomShader;
 	unsigned int screenShader, screenVAO;
 
 	struct FWGLSimulation simulation;

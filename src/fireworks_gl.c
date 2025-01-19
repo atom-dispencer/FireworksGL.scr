@@ -71,6 +71,7 @@ int main(int argc, char *argv[]) {
   FWGL_compileShader(&(fwgl->geometryShader), geometryVertexShaderSource, geometryFragmentShaderSource);
   FWGL_compileShader(&(fwgl->screenShader), screenVertexShaderSource, screenFragmentShaderSource);
   FWGL_compileShader(&(fwgl->blurredShader), blurVertexShaderSource, blurFragmentShaderSource);
+  FWGL_compileShader(&(fwgl->bloomShader), bloomVertexShaderSource, bloomFragmentShaderSource);
 
   // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
   // glfwSwapInterval(0);  // 0 for vsync off
@@ -384,7 +385,7 @@ void FWGL_prepareBuffers(struct FWGL *fwgl) {
   unsigned int blurredFBO1, blurredTexture1, blurredShader;
   unsigned int blurredFBO2, blurredTexture2;
   // A HDR buffer with the bloom (addition) result of the blur and geometry buffers
-  unsigned int bloomFBO;
+  unsigned int bloomFBO, bloomTexture;
   // A tone-remapped FBO to reduce the bloom to the standard 0-1 range.
   unsigned int tonemappedFBO;
   // Tone-mapped buffer gets drawn to the screen
@@ -404,6 +405,9 @@ void FWGL_prepareBuffers(struct FWGL *fwgl) {
   FWGL_makeTexture(&blurredTexture2, width, height);
   FWGL_makeFramebuffer(&blurredFBO1, blurredTexture1);
   FWGL_makeFramebuffer(&blurredFBO2, blurredTexture2);
+  // Bloom
+  FWGL_makeTexture(&bloomTexture, width, height);
+  FWGL_makeFramebuffer(&bloomFBO, bloomTexture);
   
 
   // 2*f Screen Position (x,y)
@@ -491,6 +495,9 @@ void FWGL_prepareBuffers(struct FWGL *fwgl) {
   fwgl->blurredTexture1 = blurredTexture1;
   fwgl->blurredFBO2 = blurredFBO2;
   fwgl->blurredTexture2 = blurredTexture2;
+  //
+  fwgl->bloomFBO = bloomFBO;
+  fwgl->bloomTexture = bloomTexture;
   //
   fwgl->screenVAO = screenVAO;
 
@@ -594,6 +601,13 @@ void FWGL_render(struct FWGL *fwgl) {
       glBindVertexArray(fwgl->screenVAO);
       glDrawArrays(GL_TRIANGLES, 0, 6);
   }
+  
+  // Bloom
+  glBindFramebuffer(GL_FRAMEBUFFER, fwgl->bloomFBO);
+  glUseProgram(fwgl->bloomShader);
+  glBindTexture(GL_TEXTURE_2D, fwgl->blurredTexture1);
+  glBindVertexArray(fwgl->screenVAO);
+  glDrawArrays(GL_TRIANGLES, 0, 6);
 
   //
   // Screen
@@ -603,6 +617,6 @@ void FWGL_render(struct FWGL *fwgl) {
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
   glUseProgram(fwgl->screenShader);
   glBindVertexArray(fwgl->screenVAO);
-  glBindTexture(GL_TEXTURE_2D, fwgl->blurredTexture1);
+  glBindTexture(GL_TEXTURE_2D, fwgl->bloomTexture);
   glDrawArrays(GL_TRIANGLES, 0, 6);
 }
