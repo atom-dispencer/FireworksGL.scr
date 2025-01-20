@@ -13,6 +13,35 @@ A screensaver for Windows which makes pretty fireworks 😊🎆
 This was somewhat inspired by a [Dave's Garage video](https://www.youtube.com/watch?v=-foAV_zU2as)
    about making a Matrix-style screensaver for the PDP-11/83.
 
+If you don't care about how the thing works and just want to use it, skip to 
+    [#Usage](#Usage).
+
+## Simulation
+
+The simulation runs at the same 'frame rate' as the graphics, but velocities
+    are adjusted with the time delta (with the exception of graphical/erratic
+    motion, but that seems stable enough without compensation).
+
+There are three particle types:
+- *Rockets*, which shoot up from the bottom of the screen, leaving a trail of
+    *Haze*, and burst into several *Sparks*.
+- *Sparks*, which are thrown off of exploding *Rockets*, leaving trails of
+    *Haze* before fading away.
+- *Haze*, which has extra high simulated drag so it stops quickly and falls
+    slowly down as it fades...
+
+Each particle type has a unique lifetime, after which it is available to be
+    revived as a new particle later.
+Particles which go too far (>50 pixels) out of bounds are culled immediately.
+
+A maximum of 1 rocket can exist at once (defined by the `MAX_ROCKETS` constant)
+    to prevent the screen becoming too busy, and a maximum of 250 total
+    particles of any type (`MAX_PARTICLES`).
+If more particles would be required, haze particles are deleted and replaced
+    first.
+If no haze is available, a random particle would be selected for
+    culling/replacement, but I've never seen this happen in the wild before.
+
 ## Rendering Pipeline
 
 Let's walk through a single rendering pass!
