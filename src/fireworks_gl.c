@@ -74,6 +74,9 @@ int main(int argc, char *argv[]) {
   FWGL_compileShader(&(fwgl->blurredShader), blurVertexShaderSource, blurFragmentShaderSource);
   FWGL_compileShader(&(fwgl->bloomShader), bloomVertexShaderSource, bloomFragmentShaderSource);
 
+  if (!fwgl->is_preview) {
+      glfwSetInputMode(fwgl->window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+  }
   // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
   // glfwSwapInterval(0);  // 0 for vsync off
   glEnable(GL_BLEND);
