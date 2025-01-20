@@ -199,6 +199,10 @@ void ProcessPTSpark(struct FWGLSimulation* simulation, int particle, float dSecs
         haze->position[1] = spark->position[1];
         haze->position[2] = spark->position[2];
 
+        haze->velocity[0] = (0.1 * spark->velocity[0]) + 5 * (RandDouble() - 0.5);
+        haze->velocity[1] = (0.1 * spark->velocity[1]) + 5 * (RandDouble() - 0.5);
+        haze->velocity[2] = 0;
+
         haze->colour[0] = spark->colour[0];
         haze->colour[1] = spark->colour[1];
         haze->colour[2] = spark->colour[2];
