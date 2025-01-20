@@ -16,12 +16,12 @@ This was somewhat inspired by a [Dave's Garage video](https://www.youtube.com/wa
 ## Rendering Pipeline
 
 ### Stage 1) Clear the screen black
-[1_clear](pipeline_photos/1_clear.jpg)
+![1_clear](pipeline_photos/1_clear.jpg)
 
 Cover the land (geometry framebuffer) in darkness...
 
 ### Stage 2) Draw particle geometry (circles)
-[2_circles](pipeline_photos/2_circles.jpg)
+![2_circles](pipeline_photos/2_circles.jpg)
 
 For each particle, draw a circle with its colour at its current location.
 All particles share the same geometry, but the number, position and colour of 
@@ -30,7 +30,7 @@ All particles share the same geometry, but the number, position and colour of
     to the GPU.
 
 ### Stage 3) Draw particle cores (points)
-[3_points](pipeline_photos/3_points.jpg)
+![3_points](pipeline_photos/3_points.jpg)
 
 For each rocket, a white point is draw at its centre using the `GL_POINTS`
     drawing mode.
@@ -41,7 +41,7 @@ Bloom can be safely applied to the whole image (no lighting threshold required!)
     because the only bright things are the fireworks!
 
 #### Stage 4a) Apply gaussian blur
-[4a_blur](pipeline_photos/4a_blur.jpg)
+![4a_blur](pipeline_photos/4a_blur.jpg)
 
 In a seperate High Dynamic Range (HDR) framebuffer, a few passes of Gaussian 
     blur are applied to the whole image.
@@ -56,7 +56,7 @@ The blurred texture is added to the geometry texture to create the famous
 Tonemapping is applied at the same time...
 
 #### Stage 4c) Tonemapping
-[4b_bloom](pipeline_photos/4b_bloom.jpg)
+![4b_bloom](pipeline_photos/4b_bloom.jpg)
 
 The bloom effect's HDR framebuffer can have colour values outside the normal
     0-1 range, so it needs to be converted back to standard RGB or we'll get
@@ -66,7 +66,7 @@ To do this, we apply a fixed exposure value, correct the gamma the standard
     back to the Low Dynamic Range.
 
 ### Stage 5) Render to screen
-[5_srgb](pipeline_photos/5_srgb.jpg)
+![5_srgb](pipeline_photos/5_srgb.jpg)
 
 🎆 *Ta-da!* 🎆 
 
