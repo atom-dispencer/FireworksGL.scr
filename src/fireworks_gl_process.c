@@ -165,7 +165,7 @@ void ProcessPTSparkRocket(struct FWGLSimulation* simulation, int particle, float
         s->position[1] = rocket->position[1] - (rocket->radius * rocket->velocity[1] / vMag);
         s->position[2] = rocket->position[2] - (rocket->radius * rocket->velocity[2] / vMag);
 
-        float erraticness = pow(min(0.25 / rocket->remainingLife, 1), 1.5);
+        float erraticness = pow(min(0.35 / rocket->remainingLife, 1), 1.5);
 
         s->velocity[0] = (- 0.75f * rocket->velocity[0]) + (erraticness * RandDouble() * rocket->velocity[1]);
         s->velocity[1] = (- 0.75f * rocket->velocity[1]) + (erraticness * RandDouble() * rocket->velocity[0]);
