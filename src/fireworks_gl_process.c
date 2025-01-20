@@ -309,11 +309,10 @@ void MoveParticles(struct FWGLSimulation* simulation, int width, int height, flo
         }
 
         // Kill out of bounds particles
-        // TODO Invert bounds again
-        if (p->position[0] < +50
-            || p->position[0] > width - 50
-            || p->position[1] < +50
-            || p->position[1] > height - 50) {
+        if (p->position[0] < -50
+            || p->position[0] > width +50
+            || p->position[1] < -50
+            || p->position[1] > height +50) {
             DeleteParticle(simulation, pId);
         }
 
