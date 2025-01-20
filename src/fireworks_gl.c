@@ -570,7 +570,7 @@ void FWGL_render(struct FWGL *fwgl) {
   //
   // Blur
   //
-  const int BLUR_PASSES_1 = 1;
+  const int BLUR_PASSES_1 = 3;
   unsigned int blurFBOs[] = { fwgl->blurredFBO1, fwgl->blurredFBO2 };
   unsigned int blurTextures[] = { fwgl->blurredTexture1, fwgl->blurredTexture2 };
 
@@ -617,7 +617,7 @@ void FWGL_render(struct FWGL *fwgl) {
   glDrawArrays(GL_TRIANGLES, 0, 6);
 
   // Blur round 2
-  const BLUR_PASSES_2 = 1;
+  const BLUR_PASSES_2 = 3;
   glUseProgram(fwgl->blurredShader);
   for (int pass = 0; pass < 2 * BLUR_PASSES_2; pass++) {
       int pingpong = pass % 2;

@@ -136,7 +136,7 @@ void MakePTHaze(struct FWGLSimulation* simulation, int particle) {
     p->acceleration[1] = -8;
     p->acceleration[2] = 0;
 
-    p->remainingLife = 3.0f;
+    p->remainingLife = 2.0f;
     p->radius = 1;
     p->children = 0;
 }
