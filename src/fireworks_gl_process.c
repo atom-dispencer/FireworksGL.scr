@@ -103,7 +103,7 @@ void MakePTSparkRocket(struct FWGLSimulation* simulation, int particle) {
     p->colour[3] = colour[3];
 
     p->remainingLife = RandIntRange(10, 40) / 10.0f;
-    p->radius = 15;
+    p->radius = 6;
     p->children = RandIntRange(5, 12);
 }
 
@@ -120,7 +120,7 @@ void MakePTSpark(struct FWGLSimulation* simulation, int particle) {
     p->acceleration[2] = 0;
 
     p->remainingLife = 1.0f;
-    p->radius = 9;
+    p->radius = 3;
     p->children = 0;
 }
 
@@ -137,7 +137,7 @@ void MakePTHaze(struct FWGLSimulation* simulation, int particle) {
     p->acceleration[2] = 0;
 
     p->remainingLife = 3.0f;
-    p->radius = 5;
+    p->radius = 1;
     p->children = 0;
 }
 

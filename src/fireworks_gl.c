@@ -570,13 +570,12 @@ void FWGL_render(struct FWGL *fwgl) {
   //
   // Blur
   //
-  const int BLUR_PASSES = 5;
+  const int BLUR_PASSES_1 = 1;
   unsigned int blurFBOs[] = { fwgl->blurredFBO1, fwgl->blurredFBO2 };
   unsigned int blurTextures[] = { fwgl->blurredTexture1, fwgl->blurredTexture2 };
 
   glUseProgram(fwgl->blurredShader);
-
-  for (int pass = 0; pass < 2*BLUR_PASSES; pass++) {
+  for (int pass = 0; pass < 2*BLUR_PASSES_1; pass++) {
       int pingpong = pass % 2;
 
       unsigned int blurDestFBO = blurFBOs[pingpong];
@@ -617,6 +616,36 @@ void FWGL_render(struct FWGL *fwgl) {
   glBindVertexArray(fwgl->screenVAO);
   glDrawArrays(GL_TRIANGLES, 0, 6);
 
+  // Blur round 2
+  const BLUR_PASSES_2 = 1;
+  glUseProgram(fwgl->blurredShader);
+  for (int pass = 0; pass < 2 * BLUR_PASSES_2; pass++) {
+      int pingpong = pass % 2;
+
+      unsigned int blurDestFBO = blurFBOs[pingpong];
+      unsigned int blurSourceTexture = blurTextures[1 - pingpong];
+
+      glBindFramebuffer(GL_FRAMEBUFFER, blurDestFBO);
+
+      unsigned int loc = glGetUniformLocation(fwgl->blurredShader, "horizontal");
+      glUniform1i(loc, 0 == pingpong);
+
+      // 0: (Initial condition) Draw from geometry to texture1
+      // 1: Draw from texture1 to texture2
+      // 2: Draw from texture2 to texture1
+      // 3: Draw from texture1 to texture2
+      // etc... (alternating)
+      if (0 == pass) {
+          glBindTexture(GL_TEXTURE_2D, fwgl->bloomTexture);
+      }
+      else {
+          glBindTexture(GL_TEXTURE_2D, blurSourceTexture);
+      }
+
+      glBindVertexArray(fwgl->screenVAO);
+      glDrawArrays(GL_TRIANGLES, 0, 6);
+  }
+
   //
   // Screen
   // 
@@ -625,6 +654,6 @@ void FWGL_render(struct FWGL *fwgl) {
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
   glUseProgram(fwgl->screenShader);
   glBindVertexArray(fwgl->screenVAO);
-  glBindTexture(GL_TEXTURE_2D, fwgl->bloomTexture);
+  glBindTexture(GL_TEXTURE_2D, fwgl->blurredTexture2);
   glDrawArrays(GL_TRIANGLES, 0, 6);
 }
