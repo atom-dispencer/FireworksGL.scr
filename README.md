@@ -4,8 +4,9 @@
 
 *A reimplementation of my [FireworksGL.scr Screensaver](https://github.com/atom-dispencer/Fireworks.scr)
     in pure C and OpenGL (with [GLFW](https://github.com/glfw/glfw) and [GLAD](https://github.com/Dav1dde/glad) 
-    for good measure, with eternal graditude to [RenderDoc](https://renderdoc.org/) for making OpenGL easily 
-    debuggable, and to [LearnOpenGL](https://learnopengl.com) for being a good teacher!!).*
+    for good measure).
+My eternal graditude to [RenderDoc](https://renderdoc.org/) for making OpenGL easily debuggable, and to 
+    [LearnOpenGL](https://learnopengl.com) for being a good teacher!.*
 
 A screensaver for Windows which makes pretty fireworks 😊🎆
 
