@@ -45,14 +45,18 @@ Bloom can be safely applied to the whole image (no lighting threshold required!)
 
 In a seperate High Dynamic Range (HDR) framebuffer, a few passes of Gaussian 
     blur are applied to the whole image.
+A fragment shader averages each pixel with its vertical, then horizontal,
+    neighbours using a 5-wide weighting matrix (applied symmetrically
+    around each texel, so effectively 11-wide).
 
 #### Stage 4b) Merge geometry and blur buffers
-[4b_bloom](pipeline_photos/4b_bloom.jpg)
 
 The blurred texture is added to the geometry texture to create the famous
     "bloom" effect.
+Tonemapping is applied at the same time...
 
 #### Stage 4c) Tonemapping
+[4b_bloom](pipeline_photos/4b_bloom.jpg)
 
 The bloom effect's HDR framebuffer can have colour values outside the normal
     0-1 range, so it needs to be converted back to standard RGB or we'll get
