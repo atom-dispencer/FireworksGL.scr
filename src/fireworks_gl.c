@@ -587,10 +587,17 @@ void FWGL_render(struct FWGL *fwgl) {
   }
   glBindVertexArray(0);
 
+  // Draw bright cores
+  glBindFramebuffer(GL_FRAMEBUFFER, fwgl->geometryFBO);
+  glBindVertexArray(fwgl->pointsVAO);
+  glUseProgram(fwgl->pointsShader);
+  glPointSize(2);
+  glDrawArrays(GL_POINTS, 0, renderParticles);
+
   //
   // Blur
   //
-  const int BLUR_PASSES_1 = 1;
+  const int BLUR_PASSES_1 = 2;
   unsigned int blurFBOs[] = { fwgl->blurredFBO1, fwgl->blurredFBO2 };
   unsigned int blurTextures[] = { fwgl->blurredTexture1, fwgl->blurredTexture2 };
 
@@ -621,12 +628,6 @@ void FWGL_render(struct FWGL *fwgl) {
       glBindVertexArray(fwgl->screenVAO);
       glDrawArrays(GL_TRIANGLES, 0, 6);
   }
-
-  glBindFramebuffer(GL_FRAMEBUFFER, fwgl->geometryFBO);
-  glBindVertexArray(fwgl->pointsVAO);
-  glUseProgram(fwgl->pointsShader);
-  glPointSize(4);
-  glDrawArrays(GL_POINTS, 0, renderParticles);
   
   // Bloom
   glBindFramebuffer(GL_FRAMEBUFFER, fwgl->bloomFBO);
@@ -680,6 +681,6 @@ void FWGL_render(struct FWGL *fwgl) {
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
   glUseProgram(fwgl->screenShader);
   glBindVertexArray(fwgl->screenVAO);
-  glBindTexture(GL_TEXTURE_2D, fwgl->blurredTexture2);
+  glBindTexture(GL_TEXTURE_2D, fwgl->bloomTexture);
   glDrawArrays(GL_TRIANGLES, 0, 6);
 }

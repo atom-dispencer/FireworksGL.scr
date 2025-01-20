@@ -146,6 +146,7 @@ void ProcessPTSparkRocket(struct FWGLSimulation* simulation, int particle, float
     struct Particle* rocket = &(simulation->particles[particle]);
 
     rocket->velocity[0] += RandIntRange(-30, 30) / 10.0f;
+    rocket->radius += RandIntRange(-100, 100) / 2500.0f;
 
     if (rocket->timeSinceLastEmission > 0.05f) {
         rocket->timeSinceLastEmission = 0;
