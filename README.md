@@ -15,6 +15,15 @@ This was somewhat inspired by a [Dave's Garage video](https://www.youtube.com/wa
 
 ## Rendering Pipeline
 
+Let's walk through a single rendering pass!
+VSync is enabled by default (it's a screensaver... you don't need 1000s FPS),
+    so for me this is happening 144 times per second!
+In fact, in RenderDoc (so on the *slow* end) with VSync disabled my Nvidia GTX 
+    3070 and i7-9700 pull off around 1550 FPS!
+
+Take, for example, this rocket with a bit of its own orange haze beneath it and
+    some faint pink haze in the backgroud:
+
 ### Stage 1) Clear the screen black
 ![1_clear](pipeline_photos/1_clear.jpg)
 
