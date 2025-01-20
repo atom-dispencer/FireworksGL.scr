@@ -53,6 +53,45 @@ const char* geometryFragmentShaderSource =
 "   }                                                               \n"
 "\0";
 
+const char* pointVertexShaderSource =
+"   #version 330 core                                       \n"
+"   layout(location = 0) in vec3 aPosition;                 \n"
+"	layout(location = 1) in int particleType;				\n"
+"                                                           \n"
+"   layout (std140) uniform WindowDimensions {              \n"
+"       int width;                                          \n"
+"       int height;                                         \n"
+"   };                                                      \n"
+"                                                           \n"
+"   void main()                                             \n"
+"   {                                                       \n"
+"		// Only applies to rockets                          \n"
+"		if (particleType == 1) {							\n"
+"			gl_Position = vec4(aPosition, 1.0f);            \n"
+"			gl_Position.x /= (width / 2.0f);                \n"
+"			gl_Position.y /= (height / 2.0f);               \n"
+"			gl_Position += vec4(-1, -1, 0, 0);              \n"
+"		}													\n"
+"		else {												\n"
+"			gl_Position = vec4(-2, -2, -2, 1);				\n"
+"		}													\n"
+"	}														\n"
+"\0";
+
+const char* pointFragmentShaderSource =
+"#version 330 core                                      \n"
+"out vec4 FragColor;                                    \n"
+"                                                       \n"
+"in vec2 TexCoords;                                     \n"
+"                                                       \n"
+"uniform sampler2D screenTexture;                       \n"
+"                                                       \n"
+"void main()                                            \n"
+"{                                                      \n"
+"    FragColor = vec4(1,1,1,1);							\n"
+"}                                                      \n"
+"\0";
+
 //
 // Blur
 //
@@ -80,11 +119,11 @@ const char* blurFragmentShaderSource =
 "uniform sampler2D image;																			\n"
 "																									\n"
 "uniform bool horizontal;																			\n"
-//"uniform float weight[5] = float[](0.227027, 0.1945946, 0.1216216, 0.054054, 0.016216);				\n"
-"uniform float weight[3] = float[](2*0.3513, 0.1159, 0.0228);				\n"
+"uniform float weight[5] = float[](0.227027, 0.1945946, 0.1216216, 0.054054, 0.016216);				\n"
+//"uniform float weight[3] = float[](2*0.3513, 0.1159, 0.0228);				\n"
 //"uniform float weight[5] = float[](2*0.2340, 2*0.1603, 2*0.0753, 2*0.0242, 2*0.0062);				\n"
 //"uniform float weight[6] = float[](2*0.1915, 0.1499, 0.0918, 0.0441, 0.0165, 2*0.0062);				\n"
-"const int WEIGHTS = 3;																									\n"
+"const int WEIGHTS = 5;																									\n"
 "																									\n"
 "void main()																						\n"
 "{																									\n"

@@ -31,6 +31,7 @@ struct FWGL {
 	// Basic circle geometry
 	unsigned int dimensionUBO, circleVAO, circleVBO, circleEBO, dataVBO;
 	unsigned int geometryFBO, geometryTexture, geometryShader;
+	unsigned int pointsVAO, pointsShader;
 	unsigned int blurredFBO1, blurredTexture1, blurredShader;
 	unsigned int blurredFBO2, blurredTexture2;
 	unsigned int bloomFBO, bloomTexture, bloomShader;

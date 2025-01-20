@@ -69,6 +69,7 @@ int main(int argc, char *argv[]) {
   }
 
   FWGL_compileShader(&(fwgl->geometryShader), geometryVertexShaderSource, geometryFragmentShaderSource);
+  FWGL_compileShader(&(fwgl->pointsShader), pointVertexShaderSource, pointFragmentShaderSource);
   FWGL_compileShader(&(fwgl->screenShader), screenVertexShaderSource, screenFragmentShaderSource);
   FWGL_compileShader(&(fwgl->blurredShader), blurVertexShaderSource, blurFragmentShaderSource);
   FWGL_compileShader(&(fwgl->bloomShader), bloomVertexShaderSource, bloomFragmentShaderSource);
@@ -104,7 +105,7 @@ int main(int argc, char *argv[]) {
     lastEpochNano = thisEpochNano;
 
     if (fwgl->is_preview) {
-        printf("\n%.6fs\n%ffps\n", dSecs, 1 / dSecs);
+       // printf("\n%.6fs\n%ffps\n", dSecs, 1 / dSecs);
     }
 
     FWGL_process(fwgl, dSecs);
@@ -210,6 +211,7 @@ enum FWGL_Error FWGL_DeInit(struct FWGL *fwgl) {
     glDeleteBuffers(1, &(fwgl->circleEBO));
     glDeleteProgram(fwgl->geometryShader);
     glDeleteFramebuffers(1, &(fwgl->geometryFBO));
+    // TODO delete the rest of the buffers
 
     printf("Freeing memory...  ");
     free(fwgl->renderData);
@@ -383,6 +385,7 @@ void FWGL_prepareBuffers(struct FWGL *fwgl) {
   // Basic output of the particle geometry (semi-transparent circles on a black background)
   unsigned int dimensionUBO, circleVAO, circleVBO, circleEBO, dataVBO;
   unsigned int geometryFBO, geometryTexture, geometryShader;
+  unsigned int pointsVAO;
   // A blurred version of the geometry
   unsigned int blurredFBO1, blurredTexture1, blurredShader;
   unsigned int blurredFBO2, blurredTexture2;
@@ -483,6 +486,16 @@ void FWGL_prepareBuffers(struct FWGL *fwgl) {
   glVertexAttribDivisor(5, 1); // Stride of 1 between swapping attributes
 
   glBindVertexArray(0);
+  
+  // Points based on translations
+  glGenVertexArrays(1, &pointsVAO);
+  glBindVertexArray(pointsVAO);
+  glBindBuffer(GL_ARRAY_BUFFER, dataVBO);
+  glEnableVertexAttribArray(0);
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(struct ParticleRenderData), (void*)0);
+  glEnableVertexAttribArray(1);
+  glVertexAttribIPointer(1, 1, GL_INT, sizeof(struct ParticleRenderData), (void*)(9 * sizeof(float)));
+  glBindVertexArray(0);
 
   //
   fwgl->dimensionUBO = dimensionUBO;
@@ -493,6 +506,7 @@ void FWGL_prepareBuffers(struct FWGL *fwgl) {
   //
   fwgl->geometryFBO = geometryFBO;
   fwgl->geometryTexture = geometryTexture;
+  fwgl->pointsVAO = pointsVAO;
   //
   fwgl->blurredFBO1 = blurredFBO1;
   fwgl->blurredTexture1 = blurredTexture1;
@@ -568,11 +582,12 @@ void FWGL_render(struct FWGL *fwgl) {
     glBindVertexArray(fwgl->circleVAO);
     glDrawElementsInstanced(GL_TRIANGLES, indexCount, GL_UNSIGNED_INT, 0, renderParticles);
   }
+  glBindVertexArray(0);
 
   //
   // Blur
   //
-  const int BLUR_PASSES_1 = 3;
+  const int BLUR_PASSES_1 = 1;
   unsigned int blurFBOs[] = { fwgl->blurredFBO1, fwgl->blurredFBO2 };
   unsigned int blurTextures[] = { fwgl->blurredTexture1, fwgl->blurredTexture2 };
 
@@ -603,6 +618,12 @@ void FWGL_render(struct FWGL *fwgl) {
       glBindVertexArray(fwgl->screenVAO);
       glDrawArrays(GL_TRIANGLES, 0, 6);
   }
+
+  glBindFramebuffer(GL_FRAMEBUFFER, fwgl->geometryFBO);
+  glBindVertexArray(fwgl->pointsVAO);
+  glUseProgram(fwgl->pointsShader);
+  glPointSize(4);
+  glDrawArrays(GL_POINTS, 0, renderParticles);
   
   // Bloom
   glBindFramebuffer(GL_FRAMEBUFFER, fwgl->bloomFBO);
@@ -619,7 +640,7 @@ void FWGL_render(struct FWGL *fwgl) {
   glDrawArrays(GL_TRIANGLES, 0, 6);
 
   // Blur round 2
-  const BLUR_PASSES_2 = 3;
+  const BLUR_PASSES_2 = 1;
   glUseProgram(fwgl->blurredShader);
   for (int pass = 0; pass < 2 * BLUR_PASSES_2; pass++) {
       int pingpong = pass % 2;
