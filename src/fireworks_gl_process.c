@@ -151,9 +151,9 @@ void ProcessPTSparkRocket(struct FWGLSimulation* simulation, int particle, float
     if (rocket->timeSinceLastEmission > 0.05f) {
         rocket->timeSinceLastEmission = 0;
 
-        int sId = ReviveDeadParticle(simulation);
-        MakePTHaze(simulation, sId);
-        struct Particle* s = &(simulation->particles[sId]);
+        int hId = ReviveDeadParticle(simulation);
+        MakePTHaze(simulation, hId);
+        struct Particle* haze = &(simulation->particles[hId]);
 
         float vMag = sqrt(
             rocket->velocity[0]*rocket->velocity[0] 
@@ -161,23 +161,23 @@ void ProcessPTSparkRocket(struct FWGLSimulation* simulation, int particle, float
             + rocket->velocity[2]* rocket->velocity[2]
         );
 
-        s->position[0] = rocket->position[0] - (rocket->radius * rocket->velocity[0] / vMag);
-        s->position[1] = rocket->position[1] - (rocket->radius * rocket->velocity[1] / vMag);
-        s->position[2] = rocket->position[2] - (rocket->radius * rocket->velocity[2] / vMag);
+        haze->position[0] = rocket->position[0] - (rocket->radius * rocket->velocity[0] / vMag);
+        haze->position[1] = rocket->position[1] - (rocket->radius * rocket->velocity[1] / vMag);
+        haze->position[2] = rocket->position[2] - (rocket->radius * rocket->velocity[2] / vMag);
 
         float erraticness = pow(min(0.35 / rocket->remainingLife, 1), 1.5);
 
-        s->velocity[0] = (- 0.75f * rocket->velocity[0]) + (erraticness * RandDouble() * rocket->velocity[1]);
-        s->velocity[1] = (- 0.75f * rocket->velocity[1]) + (erraticness * RandDouble() * rocket->velocity[0]);
-        s->velocity[2] = (- 0.75f * rocket->velocity[2]);
+        haze->velocity[0] = (- 0.75f * rocket->velocity[0]) + (erraticness * RandDouble() * rocket->velocity[1]);
+        haze->velocity[1] = (- 0.75f * rocket->velocity[1]) + (erraticness * RandDouble() * rocket->velocity[0]);
+        haze->velocity[2] = (- 0.75f * rocket->velocity[2]);
 
-        s->acceleration[0] = 0;
-        s->acceleration[1] = 0;
-        s->acceleration[2] = 0;
-        s->colour[0] = rocket->colour[0];
-        s->colour[1] = rocket->colour[1];
-        s->colour[2] = rocket->colour[2];
-        s->colour[3] = rocket->colour[3];
+        haze->acceleration[0] = 0;
+        haze->acceleration[1] = 0;
+        haze->acceleration[2] = 0;
+        haze->colour[0] = rocket->colour[0];
+        haze->colour[1] = rocket->colour[1];
+        haze->colour[2] = rocket->colour[2];
+        haze->colour[3] = rocket->colour[3];
     }
     rocket->timeSinceLastEmission += dSecs;
 }
