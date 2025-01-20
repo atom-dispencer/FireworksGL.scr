@@ -13,11 +13,64 @@ A screensaver for Windows which makes pretty fireworks 😊🎆
 This was somewhat inspired by a [Dave's Garage video](https://www.youtube.com/watch?v=-foAV_zU2as)
    about making a Matrix-style screensaver for the PDP-11/83.
 
+## Rendering Pipeline
+
+### Stage 1) Clear the screen black
+[1_clear](pipeline_photos/1_clear.jpg)
+
+Cover the land (geometry framebuffer) in darkness...
+
+### Stage 2) Draw particle geometry (circles)
+[2_circles](pipeline_photos/2_circles.jpg)
+
+For each particle, draw a circle with its colour at its current location.
+All particles share the same geometry, but the number, position and colour of 
+    particles change, so the draw operation is instanced and uses an 
+    Element Buffer Object to remove the need to resend particle geometry data
+    to the GPU.
+
+### Stage 3) Draw particle cores (points)
+[3_points](pipeline_photos/3_points.jpg)
+
+For each rocket, a white point is draw at its centre using the `GL_POINTS`
+    drawing mode.
+
+### Stage 4) Bloom
+
+Bloom can be safely applied to the whole image (no lighting threshold required!)
+    because the only bright things are the fireworks!
+
+#### Stage 4a) Apply gaussian blur
+[4a_blur](pipeline_photos/4a_blur.jpg)
+
+In a seperate High Dynamic Range (HDR) framebuffer, a few passes of Gaussian 
+    blur are applied to the whole image.
+
+#### Stage 4b) Merge geometry and blur buffers
+[4b_bloom](pipeline_photos/4b_bloom.jpg)
+
+The blurred texture is added to the geometry texture to create the famous
+    "bloom" effect.
+
+#### Stage 4c) Tonemapping
+
+The bloom effect's HDR framebuffer can have colour values outside the normal
+    0-1 range, so it needs to be converted back to standard RGB or we'll get
+    hotspots in the final image.
+To do this, we apply a fixed exposure value, correct the gamma the standard
+    2.2, and apply a Reinhard tonemapping function to bring our HDR image
+    back to the Low Dynamic Range.
+
+### Stage 5) Render to screen
+[5_srgb](pipeline_photos/5_srgb.jpg)
+
+🎆 *Ta-da!* 🎆 
+
 ## Usage
 
 1) Grab `FireworksGL.scr` from the Releases page (or build it yourself).
 2) Place `FireworksGL.scr` in your `System32` (e.g. `C:/Windows/System32/`).
-3) Select `Fireworks` in the Control Panel (Just search `screensaver` 
+3) Select `FireworksGL` in the Control Panel (Just search `screensaver` 
    or `change screen saver` or something like that in your search bar or 
    start menu).
 
