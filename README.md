@@ -44,6 +44,9 @@ If no haze is available, a random particle would be selected for
 
 ## Rendering Pipeline
 
+OpenGL 4.6 is used for graphics, GLFW for the window, and GLAD to load OpenGL 
+    bindings.
+
 Let's walk through a single rendering pass!
 VSync is enabled by default (it's a screensaver... you don't need 1000s FPS),
     so for me this is happening 144 times per second!
