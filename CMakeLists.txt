@@ -9,6 +9,12 @@ file(GLOB_RECURSE HEADER_FILES
 	${CMAKE_SOURCE_DIR}/src/*.h
 )
 add_executable(${PROJECT_NAME} ${HEADER_FILES} ${SOURCE_FILES})
+set_target_properties(
+  ${PROJECT_NAME}
+    PROPERTIES 
+    OUTPUT_NAME ${PROJECT_NAME}
+    SUFFIX ".scr"
+)
 
 message(STATUS "Found source files:")
 message(STATUS ${SOURCE_FILES})
