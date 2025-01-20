@@ -48,7 +48,7 @@ const char* geometryFragmentShaderSource =
 "       }                                                           \n"
 "       if (particleType == 2) {                                    \n"
 "           float factor = remainingLife / 2;                       \n"
-"           FragColor.w = 0.5 * factor * factor;                    \n"
+"           FragColor.w = vertexColour.w * 0.5 * factor * factor;   \n"
 "       }                                                           \n"
 "   }                                                               \n"
 "\0";

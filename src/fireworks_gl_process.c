@@ -1,5 +1,6 @@
 #include "fireworks_gl_process.h"
 #include <stdlib.h>
+#include <math.h>
 
 int RandIntRange(int lower, int upper) {
     int r = rand();
@@ -153,12 +154,22 @@ void ProcessPTSparkRocket(struct FWGLSimulation* simulation, int particle, float
         MakePTHaze(simulation, sId);
         struct Particle* s = &(simulation->particles[sId]);
 
-        s->position[0] = rocket->position[0];
-        s->position[1] = rocket->position[1];
-        s->position[2] = rocket->position[2];
-        s->velocity[0] = -0.75f * rocket->velocity[0];
-        s->velocity[1] = -0.75f * rocket->velocity[1];
-        s->velocity[2] = -0.75f * rocket->velocity[2];
+        float vMag = sqrt(
+            rocket->velocity[0]*rocket->velocity[0] 
+            + rocket->velocity[1]* rocket->velocity[1]
+            + rocket->velocity[2]* rocket->velocity[2]
+        );
+
+        s->position[0] = rocket->position[0] - (rocket->radius * rocket->velocity[0] / vMag);
+        s->position[1] = rocket->position[1] - (rocket->radius * rocket->velocity[1] / vMag);
+        s->position[2] = rocket->position[2] - (rocket->radius * rocket->velocity[2] / vMag);
+
+        float erraticness = pow(min(0.25 / rocket->remainingLife, 1), 1.5);
+
+        s->velocity[0] = (- 0.75f * rocket->velocity[0]) + (erraticness * RandDouble() * rocket->velocity[1]);
+        s->velocity[1] = (- 0.75f * rocket->velocity[1]) + (erraticness * RandDouble() * rocket->velocity[0]);
+        s->velocity[2] = (- 0.75f * rocket->velocity[2]);
+
         s->acceleration[0] = 0;
         s->acceleration[1] = 0;
         s->acceleration[2] = 0;
@@ -199,6 +210,13 @@ void ProcessPTSpark(struct FWGLSimulation* simulation, int particle, float dSecs
 void ProcessPTHaze(struct FWGLSimulation* simulation, int particle, float dSecs) {
     // No processing required
     // Haze doesn't move and fading/alpha is handled by the fragment shader
+
+    // This may cause some artifacting around red particles? Overexposure?
+    struct Particle* haze = &(simulation->particles[particle]);
+    double factor = (haze->remainingLife)/3 * (RandDouble() - 0.5) / 5.0f;
+    haze->colour[0] += factor;
+    haze->colour[1] += factor;
+    haze->colour[2] += factor;
 }
 
 void KillPTSpark(struct FWGLSimulation* simulation, int particle) {
