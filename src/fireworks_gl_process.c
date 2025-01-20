@@ -278,7 +278,7 @@ void MoveParticles(struct FWGLSimulation* simulation, int width, int height, flo
         simulation->liveRockets += 1;
 
         p->position[0] = (float)RandIntRange(200, width - 200);
-        p->position[1] = 50; // TODO Change back to -50
+        p->position[1] = -50;
         p->position[2] = 0;
     }
 
