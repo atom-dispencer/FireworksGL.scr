@@ -28,9 +28,9 @@ The screensaver automatically closes when you click any button, but *not*
 
 **/s** - Run the screensaver full screen.
 
-**/p** or **/d** - Run the screensaver in preview/debug mode (windowed.)
+**/p** - Run the screensaver in preview/debug mode (windowed.)
 
-Not yet supported (but you don't need them anyway):
+*Not yet supported (but you don't need them anyway):*
 
 **/?** - Show a help dialogue with these options.
 
