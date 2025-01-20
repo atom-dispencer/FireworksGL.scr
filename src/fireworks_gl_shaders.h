@@ -130,11 +130,12 @@ const char* bloomFragmentShaderSource =
 "                                                       \n"
 "in vec2 TexCoords;                                     \n"
 "                                                       \n"
-"uniform sampler2D screenTexture;                       \n"
+"uniform sampler2D texture0_screen;                     \n"
+"uniform sampler2D texture1_blur;						\n"
 "                                                       \n"
 "void main()                                            \n"
 "{                                                      \n"
-"    FragColor = texture(screenTexture, TexCoords);     \n"
+"    FragColor = texture(texture0_screen, TexCoords);   \n"
 "}                                                      \n"
 "\0";
 

@@ -407,6 +407,7 @@ void FWGL_prepareBuffers(struct FWGL *fwgl) {
   FWGL_makeFramebuffer(&blurredFBO2, blurredTexture2);
   // Bloom
   FWGL_makeTexture(&bloomTexture, width, height);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, width, height, 0, GL_RGBA, GL_FLOAT, NULL);
   FWGL_makeFramebuffer(&bloomFBO, bloomTexture);
   
 
@@ -569,13 +570,13 @@ void FWGL_render(struct FWGL *fwgl) {
   //
   // Blur
   //
-  const int BLUR_PASSES = 10;
+  const int BLUR_PASSES = 5;
   unsigned int blurFBOs[] = { fwgl->blurredFBO1, fwgl->blurredFBO2 };
   unsigned int blurTextures[] = { fwgl->blurredTexture1, fwgl->blurredTexture2 };
 
   glUseProgram(fwgl->blurredShader);
 
-  for (int pass = 0; pass < BLUR_PASSES; pass++) {
+  for (int pass = 0; pass < 2*BLUR_PASSES; pass++) {
       int pingpong = pass % 2;
 
       unsigned int blurDestFBO = blurFBOs[pingpong];
@@ -605,7 +606,14 @@ void FWGL_render(struct FWGL *fwgl) {
   // Bloom
   glBindFramebuffer(GL_FRAMEBUFFER, fwgl->bloomFBO);
   glUseProgram(fwgl->bloomShader);
-  glBindTexture(GL_TEXTURE_2D, fwgl->blurredTexture1);
+
+  glActiveTexture(GL_TEXTURE1);
+  glBindTexture(GL_TEXTURE_2D, fwgl->blurredTexture2);
+  glActiveTexture(GL_TEXTURE0);
+  glBindTexture(GL_TEXTURE_2D, fwgl->geometryTexture);
+
+  glUniform1i(glGetUniformLocation(fwgl->bloomShader, "texture0_screen"), 0);
+  glUniform1i(glGetUniformLocation(fwgl->bloomShader, "texture1_blur"), 1);
   glBindVertexArray(fwgl->screenVAO);
   glDrawArrays(GL_TRIANGLES, 0, 6);
 
