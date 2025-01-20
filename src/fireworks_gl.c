@@ -103,7 +103,9 @@ int main(int argc, char *argv[]) {
     dSecs = (float)(dNanos / 1e9);
     lastEpochNano = thisEpochNano;
 
-    //printf("\n%.6fs\n%ffps\n", dSecs, 1 / dSecs);
+    if (fwgl->is_preview) {
+        printf("\n%.6fs\n%ffps\n", dSecs, 1 / dSecs);
+    }
 
     FWGL_process(fwgl, dSecs);
     FWGL_render(fwgl);
