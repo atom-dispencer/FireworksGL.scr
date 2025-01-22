@@ -45,16 +45,16 @@ float quadVertices[] = {
 };
 
 int main(int argc, char *argv[]) {
-  printf("FireworksGL!\n");
-
   struct FWGL *fwgl = malloc(sizeof(struct FWGL));
-  FWGL_Init(fwgl, 250, 1);
 
   FWGL_parseArgs(fwgl, argc, argv);
   if (fwgl->error != FWGL_OK) {
     printf("Error parsing arguments: %d\n", fwgl->error);
+    FWGL_printHelp();
     return fwgl->error;
   }
+
+  FWGL_Init(fwgl, 250, 1);
 
   glfwInit();
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
@@ -68,11 +68,11 @@ int main(int argc, char *argv[]) {
     return fwgl->error;
   }
 
-  FWGL_compileShader(&(fwgl->geometryShader), geometryVertexShaderSource, geometryFragmentShaderSource);
-  FWGL_compileShader(&(fwgl->pointsShader), pointVertexShaderSource, pointFragmentShaderSource);
-  FWGL_compileShader(&(fwgl->screenShader), screenVertexShaderSource, screenFragmentShaderSource);
-  FWGL_compileShader(&(fwgl->blurredShader), blurVertexShaderSource, blurFragmentShaderSource);
-  FWGL_compileShader(&(fwgl->bloomShader), bloomVertexShaderSource, bloomFragmentShaderSource);
+  FWGL_compileShader(fwgl, &(fwgl->geometryShader), geometryVertexShaderSource, geometryFragmentShaderSource);
+  FWGL_compileShader(fwgl, &(fwgl->pointsShader), pointVertexShaderSource, pointFragmentShaderSource);
+  FWGL_compileShader(fwgl, &(fwgl->screenShader), screenVertexShaderSource, screenFragmentShaderSource);
+  FWGL_compileShader(fwgl, &(fwgl->blurredShader), blurVertexShaderSource, blurFragmentShaderSource);
+  FWGL_compileShader(fwgl, &(fwgl->bloomShader), bloomVertexShaderSource, bloomFragmentShaderSource);
 
   if (!fwgl->is_preview) {
       glfwSetInputMode(fwgl->window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
@@ -117,36 +117,40 @@ int main(int argc, char *argv[]) {
     glfwSwapBuffers(fwgl->window);
     glfwPollEvents();
   }
-  printf("Shutting down gracefully...\n");
+  if (fwgl->is_preview) {
+      printf("Shutting down gracefully...\n");
+  }
 
   enum FWGL_Error error = FWGL_DeInit(fwgl);
   if (error != FWGL_OK) {
       printf("Error deinitialising FWGL: %d\n", error);
   }
 
-  printf("Terminating GLFW\n");
   glfwTerminate();
-
-  printf("Shutdown OK\n");
   return FWGL_OK;
 }
 
 enum FWGL_Error FWGL_Init(struct FWGL *fwgl, int maxParticles, int maxRockets) {
-    printf("Initialising new FWGL with maxParticles=%d, maxRockets=%d\n", maxParticles, maxRockets);
+    if (fwgl->is_preview) {
+        printf("Initialising new FWGL with maxParticles=%d, maxRockets=%d\n", maxParticles, maxRockets);
+    }
     fwgl->error = FWGL_ERROR_INIT;
 
     struct timespec ts;
     timespec_get(&ts, TIME_UTC);
     srand(ts.tv_nsec);
-    printf("Random seed is %ld\n", ts.tv_nsec);
+    if (fwgl->is_preview) {
+        printf("Random seed is %ld\n", ts.tv_nsec);
+    }
 
 
     int renderDataAllocation = sizeof(struct ParticleRenderData) * maxParticles;
     int particlesAllocation = sizeof(struct Particle) * maxParticles;
-    printf("renderData will be allocated %d bytes\n", renderDataAllocation);
-    printf("particles will be allocated %d bytes\n", renderDataAllocation);
+    if (fwgl->is_preview) {
+        printf("renderData will be allocated %d bytes\n", renderDataAllocation);
+        printf("particles will be allocated %d bytes\n", renderDataAllocation);
+    }
 
-    fwgl->is_preview = 0;
     fwgl->window, fwgl->geometryShader, fwgl->circleVAO, fwgl->circleVBO, fwgl->dataVBO,
     fwgl->circleEBO = -1;
     fwgl->renderData = malloc(renderDataAllocation);
@@ -206,9 +210,13 @@ enum FWGL_Error FWGL_Init(struct FWGL *fwgl, int maxParticles, int maxRockets) {
 }
 
 enum FWGL_Error FWGL_DeInit(struct FWGL *fwgl) {
-    printf("Deinitialising FWGL: ");
+    if (fwgl->is_preview) {
+        printf("Deinitialising FWGL: ");
+    }
 
-    printf("Deleting OpenGL resources...  ");
+    if (fwgl->is_preview) {
+        printf("Deleting OpenGL resources...  ");
+    }
     glDeleteVertexArrays(1, &(fwgl->circleVAO));
     glDeleteBuffers(1, &(fwgl->circleVBO));
     glDeleteBuffers(1, &(fwgl->circleEBO));
@@ -216,12 +224,12 @@ enum FWGL_Error FWGL_DeInit(struct FWGL *fwgl) {
     glDeleteFramebuffers(1, &(fwgl->geometryFBO));
     // TODO delete the rest of the buffers
 
-    printf("Freeing memory...  ");
+    if (fwgl->is_preview) {
+        printf("Freeing memory...  ");
+    }
     free(fwgl->renderData);
     free(fwgl->simulation.particles);
     free(fwgl);
-
-    printf("FWGL_DeInit OK\n");
     return FWGL_OK;
 }
 
@@ -236,15 +244,27 @@ void FWGL_parseArgs(struct FWGL *fwgl, int argc, char *argv[]) {
     fwgl->is_preview = 0;
   } else if (strcmp(argv[1], "/p") == 0) {
     fwgl->is_preview = 1;
+    printf("Preview mode detected!\n");
   } else {
     printf("Unrecognised argument: %s\n", argv[1]);
     fwgl->error = FWGL_ERROR_INIT_UNKNOWNARG;
+    return;
   }
 
   fwgl->error = FWGL_OK;
 }
 
-void FWGL_printHelp() { printf(" ~~ Help ~~ \n"); }
+void FWGL_printHelp() { 
+    printf("\n  ~~ Help ~~ \n");
+    printf("  FireworksGL.scr Screensaver, by Adam Spencer \n");
+    printf("  https://github.com/atom-dispencer/FireworksGL.scr/ for source code and full documentation.\n");
+    printf("  Options:\n");
+    printf("      /s - Run in screensaver mode (fullscreen, logging disabled)\n");
+    printf("      /p - Run in preview mode (small window, logging enabled)\n");
+    printf("  Correct usage:\n");
+    printf("      FireworksGL.scr /s\n");
+    printf("      FireworksGL.scr /p\n\n");
+}
 
 void FWGL_createGLFWWindow(struct FWGL *fwgl) {
 
@@ -261,13 +281,11 @@ void FWGL_createGLFWWindow(struct FWGL *fwgl) {
     height = 600;
     window = glfwCreateWindow(width, height, "FireworksGL", NULL, NULL);
   } else {
-    printf("Creating full screen window\n");
     GLFWmonitor *monitor = glfwGetPrimaryMonitor();
     const GLFWvidmode *mode = glfwGetVideoMode(monitor);
 
     width = mode->width;
     height = mode->height;
-    printf("Using dimensions: %dx%d\n", width, height);
 
     window = glfwCreateWindow(width, height, "FireworksGL", monitor, NULL);
   }
@@ -301,8 +319,10 @@ void FWGL_process(struct FWGL *fwgl, float dSecs) {
   if (GLFW_PRESS == glfwGetKey(fwgl->window, GLFW_KEY_SPACE) ||
       GLFW_PRESS == glfwGetKey(fwgl->window, GLFW_KEY_ENTER) ||
       GLFW_PRESS == glfwGetMouseButton(fwgl->window, GLFW_MOUSE_BUTTON_LEFT)) {
-    printf("Input detected! Triggering close...\n");
-    glfwSetWindowShouldClose(fwgl->window, GLFW_TRUE);
+      if (fwgl->is_preview) {
+          printf("Input detected! Triggering close...\n");
+      }
+      glfwSetWindowShouldClose(fwgl->window, GLFW_TRUE);
   }
 
   int width;
@@ -311,13 +331,15 @@ void FWGL_process(struct FWGL *fwgl, float dSecs) {
   MoveParticles(&(fwgl->simulation), width, height, dSecs);
 }
 
-void FWGL_compileShader(unsigned int* program, const char* vertexSource, const char* fragSource) {
+void FWGL_compileShader(struct FWGL* fwgl, unsigned int* program, const char* vertexSource, const char* fragSource) {
 
     int success;
     char log[512];
 
-    printf("\Vertex Shader:\n%s\n", vertexSource);
-    printf("\Fragment Shader:\n%s\n", fragSource);
+    if (fwgl->is_preview) {
+        printf("\Vertex Shader:\n%s\n", vertexSource);
+        printf("\Fragment Shader:\n%s\n", fragSource);
+    }
 
     unsigned int vertexShader = glCreateShader(GL_VERTEX_SHADER);
     glShaderSource(vertexShader, 1, &vertexSource, NULL);
@@ -350,7 +372,9 @@ void FWGL_compileShader(unsigned int* program, const char* vertexSource, const c
 
     glDeleteShader(vertexShader);
     glDeleteShader(fragShader);
-    printf("Successfully compiled and linked shader program!\n");
+    if (fwgl->is_preview) {
+        printf("Successfully compiled and linked shader program!\n");
+    }
 }
 
 void FWGL_makeTexture(unsigned int* texture, int width, int height) {

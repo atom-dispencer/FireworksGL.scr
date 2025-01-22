@@ -44,10 +44,11 @@ struct FWGL {
 #define TO_GLCOLOR(b) (b / 255.0f)
 
 enum FWGL_Error FWGL_Init(struct FWGL* fwgl, int maxParticles, int maxRockets);
+void FWGL_printHelp();
 void FWGL_parseArgs(struct FWGL* fwgl, int argc, char* argv[]);
 void FWGL_createGLFWWindow(struct FWGL* fwgl);
 void FWGL_framebufferSizeCallback(GLFWwindow* window, int width, int height);
 void FWGL_process(struct FWGL* fwgl, float dSecs);
-void FWGL_compileShader(unsigned int* program, const char* vertexSource, const char* fragSource);
+void FWGL_compileShader(struct FWGL* fwgl, unsigned int* program, const char* vertexSource, const char* fragSource);
 void FWGL_prepareBuffers(struct FWGL* fwgl);
 void FWGL_render(struct FWGL* fwgl);
