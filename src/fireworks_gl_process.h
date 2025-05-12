@@ -30,6 +30,8 @@ struct FWGLSimulation {
 
 void RandomBrightColour(float rgba[4]);
 int RandIntRange(int lower, int upper);
+double RandDouble();
+void DistributeSpeeds(float* speeds, float* velocities, int speedCount);
 void MoveParticles(struct FWGLSimulation* simulation, int width, int height, float dSecs);
 void DeleteParticle(struct FWGLSimulation* simulation, int particle);
 

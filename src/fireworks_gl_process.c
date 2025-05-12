@@ -20,6 +20,17 @@ double RandDouble() {
     return (double)rand() / (double)RAND_MAX;
 }
 
+void DistributeSpeeds(float* speeds, float* velocities, int speedCount) {
+    float arc = 2 * 3.1415926 / speedCount;
+
+    for (int i = 0; i < speedCount; i++) {
+        // Generate a random angle in the first half of each arc
+        float angle = arc * (i + 0.5 * RandDouble());
+        velocities[2 * i] = speeds[i] * cos(angle);
+        velocities[2 * i + 1] = speeds[i] * sin(angle);
+    }
+}
+
 void DeleteParticle(struct FWGLSimulation* simulation, int particle) {
     struct Particle* p = &(simulation->particles[particle]);
     
@@ -112,6 +123,8 @@ void MakePTSpark(struct FWGLSimulation* simulation, int particle) {
     struct Particle* p = &(simulation->particles[particle]);
 
     p->type = PT_SPARK;
+    p->children = 0;
+    p->radius = 3;
 
     p->velocity[0] = (float) RandIntRange(-200, 200);
     p->velocity[1] = (float) RandIntRange(-200, 200);
@@ -121,8 +134,6 @@ void MakePTSpark(struct FWGLSimulation* simulation, int particle) {
     p->acceleration[2] = 0;
 
     p->remainingLife = 1.0f;
-    p->radius = 3;
-    p->children = 0;
 }
 
 void MakePTHaze(struct FWGLSimulation* simulation, int particle) {
@@ -225,41 +236,91 @@ void ProcessPTHaze(struct FWGLSimulation* simulation, int particle, float dSecs)
 }
 
 void KillPTSpark(struct FWGLSimulation* simulation, int particle) {
-    // Sparks don't do anything special when they die
+    struct Particle* parent = &(simulation->particles[particle]);
+
+    // If the spark isn't a splitter, nothing happens
+    if (parent->children <= 0) return;
+
+    // Space particles out around a circle
+    float* speeds = malloc(sizeof(float) * parent->children);
+    float* velocities = malloc(2 * sizeof(float) * parent->children);
+    for (int i = 0; i < parent->children; i++) {
+        speeds[i] = (float) RandIntRange(150, 250);
+    }
+    DistributeSpeeds(speeds, velocities, parent->children);
+
+    for (int i = 0; i < parent->children; i++) {
+        int sId = ReviveDeadParticle(simulation);
+        struct Particle* spark = &(simulation->particles[sId]);
+        MakePTSpark(simulation, sId);
+
+        spark->position[0] = parent->position[0];
+        spark->position[1] = parent->position[1];
+        spark->position[2] = parent->position[2];
+
+        spark->velocity[0] = velocities[2 * i];
+        spark->velocity[1] = velocities[2 * i + 1];
+
+        spark->velocity[0] += 0.5f * parent->velocity[0];
+        spark->velocity[1] += 0.5f * parent->velocity[1];
+        spark->velocity[2] += 0.5f * parent->velocity[2];
+        
+        float colour[4] = { 0 };
+        RandomBrightColour(&colour);
+        spark->colour[0] = colour[0];
+        spark->colour[1] = colour[1];
+        spark->colour[2] = colour[2];
+        spark->colour[3] = colour[3];
+    }
+
+    free(speeds);
+    free(velocities);
 }
 
 void KillPTSparkRocket(struct FWGLSimulation* simulation, int particle) {
     struct Particle* rocket = &(simulation->particles[particle]);
 
-    float xTotal = 0;
-    float yTotal = 0;
-    float zTotal = 0;
+    // Space particles out around a circle
+    float* speeds = malloc(sizeof(float) * rocket->children);
+    float* velocities = malloc(2 * sizeof(float) * rocket->children);
+    for (int i = 0; i < rocket->children; i++) {
+        speeds[i] = (float)RandIntRange(200, 300);
+    }
+    DistributeSpeeds(speeds, velocities, rocket->children);
+
+    // Small chance to make a really big bang!
+    int splitter = RandDouble() < 0.1 ? 1 : 0;
 
     for (int i = 0; i < rocket->children; i++) {
         int sId = ReviveDeadParticle(simulation);
         struct Particle* spark = &(simulation->particles[sId]);
         MakePTSpark(simulation, sId);
 
-        // Always try to push the total towards zero to make more even explosions.
-        // If going in same x direction, flip vX
-        if (xTotal * spark->velocity[0] > 0) {
-            spark->velocity[0] *= -1;
+        // Splitter-spark
+        if (splitter) {
+            spark->radius = 2;
+            spark->children = RandIntRange(6, 12);
+            spark->remainingLife *= 0.75;
+
+            float colour[4] = { 0 };
+            RandomBrightColour(&colour);
+            spark->colour[0] = colour[0];
+            spark->colour[1] = colour[1];
+            spark->colour[2] = colour[2];
+            spark->colour[3] = colour[3];
         }
-        // If going in same y direction, flip vY
-        if (yTotal * spark->velocity[1] > 0) {
-            spark->velocity[1] *= -1;
+        // Normal spark
+        else {
+            spark->radius = 3;
+            spark->children = 0;
         }
-        // If going in same z direction, flip vZ
-        if (zTotal * spark->velocity[2] > 0) {
-            spark->velocity[2] *= -1;
-        }
-        xTotal += spark->velocity[0];
-        yTotal += spark->velocity[1];
-        zTotal += spark->velocity[2];
 
         spark->position[0] = rocket->position[0];
         spark->position[1] = rocket->position[1];
         spark->position[2] = rocket->position[2];
+
+        spark->velocity[0] = velocities[2 * i];
+        spark->velocity[1] = velocities[2 * i + 1];
 
         spark->velocity[0] += 0.5f * rocket->velocity[0];
         spark->velocity[1] += 0.5f * rocket->velocity[1];
@@ -270,6 +331,9 @@ void KillPTSparkRocket(struct FWGLSimulation* simulation, int particle) {
         spark->colour[2] = rocket->colour[2];
         spark->colour[3] = rocket->colour[3];
     }
+
+    free(speeds);
+    free(velocities);
 }
 
 void KillPTHaze(struct FWGLSimulation* simulation, int particle) {
