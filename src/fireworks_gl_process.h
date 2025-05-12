@@ -17,6 +17,8 @@ struct Particle {
     float colour[4];
     int children;
     float timeSinceLastEmission;
+    int rocketIsPinwheel;
+    float hazeDragFactor;
 };
 
 struct FWGLSimulation {

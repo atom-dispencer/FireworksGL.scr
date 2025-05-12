@@ -99,6 +99,7 @@ void MakePTSparkRocket(struct FWGLSimulation* simulation, int particle) {
     struct Particle* p = &(simulation->particles[particle]);
 
     p->type = PT_SPARK_ROCKET;
+    p->rocketIsPinwheel = RandDouble() < 0.1 ? 1 : 0;
 
     p->velocity[0] = (float) RandIntRange(-100, 100);
     p->velocity[1] = (float) RandIntRange(250, 400);
@@ -159,7 +160,10 @@ void ProcessPTSparkRocket(struct FWGLSimulation* simulation, int particle, float
     rocket->velocity[0] += RandIntRange(-30, 30) / 10.0f;
     rocket->radius += RandIntRange(-100, 100) / 2500.0f;
 
-    if (rocket->timeSinceLastEmission > 0.05f) {
+    if (
+        (rocket->rocketIsPinwheel && rocket->timeSinceLastEmission > 0.02f) 
+        || (!rocket->rocketIsPinwheel && rocket->timeSinceLastEmission > 0.05f)
+        ) {
         rocket->timeSinceLastEmission = 0;
 
         int hId = ReviveDeadParticle(simulation);
@@ -172,15 +176,30 @@ void ProcessPTSparkRocket(struct FWGLSimulation* simulation, int particle, float
             + rocket->velocity[2]* rocket->velocity[2]
         );
 
-        haze->position[0] = rocket->position[0] - (rocket->radius * rocket->velocity[0] / vMag);
+        haze->position[0] =  rocket->position[0] - (rocket->radius * rocket->velocity[0] / vMag);
         haze->position[1] = rocket->position[1] - (rocket->radius * rocket->velocity[1] / vMag);
         haze->position[2] = rocket->position[2] - (rocket->radius * rocket->velocity[2] / vMag);
 
         float erraticness = pow(min(0.35 / rocket->remainingLife, 1), 1.5);
 
-        haze->velocity[0] = (- 0.75f * rocket->velocity[0]) + (erraticness * RandDouble() * rocket->velocity[1]);
-        haze->velocity[1] = (- 0.75f * rocket->velocity[1]) + (erraticness * RandDouble() * rocket->velocity[0]);
-        haze->velocity[2] = (- 0.75f * rocket->velocity[2]);
+        if (rocket->rocketIsPinwheel) {
+            haze->velocity[0] = RandIntRange(200, 250) * cos(20 * rocket->remainingLife);
+            haze->velocity[1] = RandIntRange(150, 200) * sin(20 * rocket->remainingLife);
+            haze->velocity[2] = 0;
+
+            // Final indices are inverted because trig, don't change them
+            haze->velocity[0] += rocket->velocity[0] + (0.25 * RandDouble() * haze->velocity[1]);
+            haze->velocity[1] += rocket->velocity[1] + (0.25 * RandDouble() * haze->velocity[0]);
+            haze->velocity[2] += rocket->velocity[2];
+
+            haze->hazeDragFactor = 1.3;
+        }
+        else {
+            // Final indices are inverted because trig, don't change them
+            haze->velocity[0] = (-0.75f * rocket->velocity[0]) + (RandDouble() * rocket->velocity[1]);
+            haze->velocity[1] = (-0.75f * rocket->velocity[1]) + (erraticness * RandDouble() * rocket->velocity[0]);
+            haze->velocity[2] = (-0.75f * rocket->velocity[2]);
+        }
 
         haze->acceleration[0] = 0;
         haze->acceleration[1] = 0;
@@ -224,11 +243,13 @@ void ProcessPTSpark(struct FWGLSimulation* simulation, int particle, float dSecs
 }
 
 void ProcessPTHaze(struct FWGLSimulation* simulation, int particle, float dSecs) {
-    // No processing required
-    // Haze doesn't move and fading/alpha is handled by the fragment shader
+    struct Particle* haze = &(simulation->particles[particle]);
+
+    // Haze's velocity is constant and fading/alpha is done in the fragment shader
+    haze->acceleration[0] = -haze->hazeDragFactor * haze->velocity[0];
+    haze->acceleration[1] = -haze->hazeDragFactor * haze->velocity[1];
 
     // This may cause some artifacting around red particles? Overexposure?
-    struct Particle* haze = &(simulation->particles[particle]);
     double factor = (haze->remainingLife)/3 * (RandDouble() - 0.5) / 5.0f;
     haze->colour[0] += factor;
     haze->colour[1] += factor;

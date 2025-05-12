@@ -54,7 +54,7 @@ int main(int argc, char *argv[]) {
     return fwgl->error;
   }
 
-  FWGL_Init(fwgl, 350, 1);
+  FWGL_Init(fwgl, 500, 1);
 
   glfwInit();
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
