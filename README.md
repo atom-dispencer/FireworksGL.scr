@@ -15,6 +15,8 @@ This was somewhat inspired by a [Dave's Garage video](https://www.youtube.com/wa
 
 If you don't care about how the thing works and just want to use it, skip to 
     [#Usage](#Usage).
+Instructions for building and testing the project are under [#Building](#Building) and
+    [#Options](#Options).
 
 ## Simulation
 
@@ -138,3 +140,31 @@ The screensaver automatically closes when you click any button, but *not*
 **/?** - Show a help dialogue with these options.
 
 **/c** - Show a configuration dialogue. No options currently supported.
+
+## Building
+
+The project uses CMake, and has been successfully compiled and run on 
+*Windows 11* (via WSL & Visual Studio) and on *Pop!_OS* (with `make`).
+
+To build, you will need a copies of `libglfw3` and `glfw3.h` to link against.
+GLFW is a git submodule of this project (in `lib/glfw`), so you can build it on
+Linux or WSL by:
+
+```sh
+cd FireworksGL.scr
+git submodule update --init --recursive
+# Generate the build files with CMake
+cmake -S lib/glfw -B lib/glfw/build     # Or use the CMake GUI
+# Build GLFW
+cd lib/glfw/build
+make
+```
+
+Once you've built GLFW, you can build the project in the same way:
+
+```sh
+cd FireworksGL.scr
+cmake -S . -B build     # Or use the CMake GUI
+cd build
+make
+```
