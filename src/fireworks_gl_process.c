@@ -42,18 +42,19 @@ void DeleteParticle(struct FWGLSimulation *simulation, int particle) {
 }
 
 void RandomBrightColour(float rgba[4]) {
-    int flip = RandDouble() > 0.5 ? 1 : 0;
-    int random = RandIntRange(0, 3);
-    int zero = flip ? (random + 1) % 3 : (random + 2) % 3;
-    int one = flip ? (random + 2) % 3 : (random + 1) % 3;
+  int flip = RandDouble() > 0.5 ? 1 : 0;
+  int random = RandIntRange(0, 3);
+  int zero = flip ? (random + 1) % 3 : (random + 2) % 3;
+  int one = flip ? (random + 2) % 3 : (random + 1) % 3;
 
-    rgba[random] = (float)RandDouble();
-    rgba[zero] = 0.0f;
-    rgba[one] = 1.0f;
-    // Maximum alpha
-    rgba[3] = 1.0f;
+  rgba[random] = (float)RandDouble();
+  rgba[zero] = 0.0f;
+  rgba[one] = 1.0f;
+  // Maximum alpha
+  rgba[3] = 1.0f;
 
-    printf("RandomBrightColour(%.2f, %.2f, %.2f, %.2f)\n", rgba[0], rgba[1], rgba[2], rgba[3]);
+  printf("RandomBrightColour(%.2f, %.2f, %.2f, %.2f)\n", rgba[0], rgba[1],
+         rgba[2], rgba[3]);
 }
 
 int ReviveDeadParticle(struct FWGLSimulation *simulation) {
