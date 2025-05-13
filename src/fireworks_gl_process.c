@@ -41,7 +41,7 @@ void DeleteParticle(struct FWGLSimulation *simulation, int particle) {
   simulation->liveParticles--;
 }
 
-void RandomBrightColour(float rgba[4]) {
+void RandomBrightColour(struct FWGLSimulation *simulation, float rgba[4]) {
   int flip = RandDouble() > 0.5 ? 1 : 0;
   int random = RandIntRange(0, 3);
   int zero = flip ? (random + 1) % 3 : (random + 2) % 3;
@@ -53,8 +53,10 @@ void RandomBrightColour(float rgba[4]) {
   // Maximum alpha
   rgba[3] = 1.0f;
 
-  printf("RandomBrightColour(%.2f, %.2f, %.2f, %.2f)\n", rgba[0], rgba[1],
-         rgba[2], rgba[3]);
+  if (simulation->fwglIsPreview) {
+    printf("RandomBrightColour(simulation, %.2f, %.2f, %.2f, %.2f)\n", rgba[0],
+           rgba[1], rgba[2], rgba[3]);
+  }
 }
 
 int ReviveDeadParticle(struct FWGLSimulation *simulation) {
@@ -74,9 +76,12 @@ int ReviveDeadParticle(struct FWGLSimulation *simulation) {
     struct Particle *c = &(simulation->particles[i]);
     if (c->type == PT_HAZE) {
       // Don't increment because we're just reassigning
-      printf("No dead particles to revive, reallocating haze particle %d (you "
-             "should increase FWGL_Init maxParticles)\n",
-             i);
+      if (simulation->fwglIsPreview) {
+        printf(
+            "No dead particles to revive, reallocating haze particle %d (you "
+            "should increase FWGL_Init maxParticles)\n",
+            i);
+      }
       return i;
     }
   }
@@ -103,7 +108,7 @@ void MakePTSparkRocket(struct FWGLSimulation *simulation, int particle) {
   p->acceleration[2] = 0;
 
   float colour[4] = {0};
-  RandomBrightColour(&colour);
+  RandomBrightColour(simulation, &colour);
   p->colour[0] = colour[0];
   p->colour[1] = colour[1];
   p->colour[2] = colour[2];
@@ -289,7 +294,7 @@ void KillPTSpark(struct FWGLSimulation *simulation, int particle) {
     spark->velocity[2] += 0.5f * parent->velocity[2];
 
     float colour[4] = {0};
-    RandomBrightColour(&colour);
+    RandomBrightColour(simulation, &colour);
     spark->colour[0] = colour[0];
     spark->colour[1] = colour[1];
     spark->colour[2] = colour[2];
@@ -326,7 +331,7 @@ void KillPTSparkRocket(struct FWGLSimulation *simulation, int particle) {
       spark->remainingLife *= 0.75;
 
       float colour[4] = {0};
-      RandomBrightColour(&colour);
+      RandomBrightColour(simulation, &colour);
       spark->colour[0] = colour[0];
       spark->colour[1] = colour[1];
       spark->colour[2] = colour[2];

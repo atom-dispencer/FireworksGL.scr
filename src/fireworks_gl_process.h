@@ -18,6 +18,7 @@ struct Particle {
 };
 
 struct FWGLSimulation {
+  int fwglIsPreview;
   int maxParticles;
   int liveParticles;
   int maxRockets;
@@ -26,7 +27,7 @@ struct FWGLSimulation {
   float timeSinceRocketCount;
 };
 
-void RandomBrightColour(float rgba[4]);
+void RandomBrightColour(struct FWGLSimulation *simulation, float rgba[4]);
 int RandIntRange(int lower, int upper);
 double RandDouble();
 void DistributeSpeeds(float *speeds, float *velocities, int speedCount);

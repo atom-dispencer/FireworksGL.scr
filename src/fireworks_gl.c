@@ -164,6 +164,7 @@ enum FWGL_Error FWGL_Init(struct FWGL *fwgl, int maxParticles, int maxRockets) {
   simulation.liveParticles = 0;
   simulation.maxRockets = maxRockets;
   simulation.liveRockets = 0;
+  simulation.fwglIsPreview = fwgl->is_preview;
   simulation.particles = malloc(particlesAllocation);
   simulation.timeSinceRocketCount = 0;
   fwgl->simulation = simulation;
